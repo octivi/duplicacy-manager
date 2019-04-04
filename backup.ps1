@@ -46,7 +46,7 @@ function main {
   }
 
   Set-Location "$repository"
-  $logFile = "logs/backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')
+  $logFile = ".duplicacy/logs/backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')
   foreach ($task in $tasks) {
     execute $options.duplicacyFullPath $logFile (-split $options.globalOptions + "$task" + $options[$task])
   }
