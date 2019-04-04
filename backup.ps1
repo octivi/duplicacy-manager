@@ -14,7 +14,7 @@ $options = @{
   prune = "-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7"
 }
 
-function execute($command, $logFile, $arg) {
+function execute($command, $arg, $logFile) {
   & $command @arg *>&1 | Tee-Object -FilePath "$logFile" -Append
 }
 
@@ -48,7 +48,7 @@ function main {
   Set-Location "$repository"
   $logFile = Join-Path ".duplicacy" "logs" ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
   foreach ($task in $tasks) {
-    execute $options.duplicacyFullPath $logFile (-split $options.globalOptions + "$task" + $options[$task])
+    execute $options.duplicacyFullPath (-split $options.globalOptions + "$task" + $options[$task]) $logFile
   }
 }
 
