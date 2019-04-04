@@ -15,7 +15,7 @@ $options = @{
 }
 
 function execute($command, $arg, $logFile) {
-  & $command @arg *>&1 | Tee-Object -FilePath "$logFile" -Append
+  & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
 }
 
 function main {
@@ -48,7 +48,7 @@ function main {
   Set-Location "$repository"
   $logFile = Join-Path -Path ".duplicacy" -ChildPath "logs" | Join-Path -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
   foreach ($task in $tasks) {
-    execute $options.duplicacyFullPath (-split $options.globalOptions + "$task" + $options[$task]) $logFile
+    execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task] -join " ") $logFile
   }
 }
 
