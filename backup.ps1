@@ -6,7 +6,7 @@ param (
 )
 
 $options = @{
-  duplicacyFullPath = "$($PSScriptRoot)/$($options.duplicacyPath)/duplicacy"
+  duplicacyFullPath = Join-Path "$($PSScriptRoot)" "duplicacy"
   duplicacyDebug = $false
   globalOptions = "-log"
   backup = "-stats -vss"
@@ -46,7 +46,7 @@ function main {
   }
 
   Set-Location "$repository"
-  $logFile = ".duplicacy/logs/backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')
+  $logFile = Join-Path ".duplicacy" "logs" ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
   foreach ($task in $tasks) {
     execute $options.duplicacyFullPath $logFile (-split $options.globalOptions + "$task" + $options[$task])
   }
