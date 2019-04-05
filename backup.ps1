@@ -9,6 +9,7 @@ param (
 $options = @{
   selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
   selfFullPath = "$PSCommandPath"
+  keepLogsForDays = 30
   duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
   duplicacyDebug = $false
   globalOptions = "-log"
@@ -30,6 +31,16 @@ function execute {
 function main {
   $duplicacyTasks = @()
   switch($command -split '\+') {
+    cleanLogs {
+      $logDir = Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
+      if (Test-Path -Path "$logDir") {
+        Get-ChildItem "$($logDir)/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
+      }
+      else {
+        Write-Host "Log directory '$logDir' does not exists"
+      }
+    }
+
     updateSelf {
       (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
       break
