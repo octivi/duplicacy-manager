@@ -16,7 +16,12 @@ $options = @{
   prune = "-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7"
 }
 
-function execute($command, $arg, $logFile) {
+function execute {
+  param (
+    [Parameter(Mandatory = $true)][string]$command,
+    [Parameter(Mandatory = $true)][string]$arg,
+    [Parameter(Mandatory = $true)][string]$logFile
+  )
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
 }
 
