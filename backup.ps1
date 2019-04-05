@@ -28,11 +28,6 @@ function execute {
 function main {
   $duplicacyTasks = @()
   switch($command -split '\+') {
-    help {
-      Write-Host "Help"
-      exit
-    }
-
     updateSelf {
       (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
       break
@@ -47,6 +42,10 @@ function main {
     }
     prune {
       $duplicacyTasks += $_
+    }
+    default {
+      Write-Host "Help"
+      exit
     }
   }
 
