@@ -55,11 +55,13 @@ function main {
       exit
     }
   
+    $pwd = Get-Location
     Set-Location "$repository"
     $logFile = Join-Path -Path ".duplicacy" -ChildPath "logs" | Join-Path -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
     foreach ($task in $duplicacyTasks) {
       execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task] -join " ") $logFile
     }
+    Set-Location "$pwd"
   }
 }
 
