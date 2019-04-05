@@ -65,6 +65,9 @@ function main {
       }
       $duplicacyTasks += $_
     }
+    list {
+      $duplicacyTasks += $_
+    }
     prune {
       $duplicacyTasks += $_
     }
@@ -88,7 +91,10 @@ function main {
     Set-Location "$repository"
     $logFile = Join-Path -Path ".duplicacy" -ChildPath "logs" | Join-Path -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
     foreach ($task in $duplicacyTasks) {
-      execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task],$remainingArguments -join " ") $logFile
+      if ($options.ContainsKey($task)) {
+        $optionArguments = $options[$task]
+      }
+      execute $options.duplicacyFullPath ($options.globalOptions,$task,$optionArguments,$remainingArguments -join " ") $logFile
     }
     Set-Location "$pwd"
   }
