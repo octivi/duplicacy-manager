@@ -1,8 +1,9 @@
 # Copyright (C) 2019  Marcin Engelmann <mengelmann@octivi.com>
 
 param (
-  [string]$command = "help",
-  [string]$repository
+  [parameter(Position=0)][string]$command = "help",
+  [parameter(Position=1)][string]$repository,
+  [Parameter(ValueFromRemainingArguments=$true)][string]$remainingArguments
 )
 
 $options = @{
@@ -63,7 +64,7 @@ function main {
     Set-Location "$repository"
     $logFile = Join-Path -Path ".duplicacy" -ChildPath "logs" | Join-Path -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
     foreach ($task in $duplicacyTasks) {
-      execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task] -join " ") $logFile
+      execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task],$remainingArguments -join " ") $logFile
     }
     Set-Location "$pwd"
   }
