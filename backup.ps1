@@ -14,6 +14,7 @@ $options = @{
   globalOptions = "-log"
   backup = "-stats -vss"
   check = "-stats"
+  init = " -encrypt"
   prune = "-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7"
 }
 
@@ -41,6 +42,18 @@ function main {
     check {
       $duplicacyTasks += $_
     }
+    init {
+      if (Test-Path -Path "$repository") {
+        Write-Host "Repository '$repository' already exists"
+        exit
+      }
+      else {
+        New-Item -ItemType Directory -Path "$repository"
+        New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
+        New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+      }
+      $duplicacyTasks += $_
+    }
     prune {
       $duplicacyTasks += $_
     }
@@ -56,7 +69,7 @@ function main {
     }
   
     if (!$repository -Or !(Test-Path -Path "$repository")) {
-      Write-Host "Repository '$($repository)' does not exist"
+      Write-Host "Repository '$repository' does not exists"
       exit
     }
   
