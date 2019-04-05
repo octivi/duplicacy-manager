@@ -6,6 +6,8 @@ param (
 )
 
 $options = @{
+  selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
+  selfFullPath = Join-Path -Path "$($PSScriptRoot)" -ChildPath "backup.ps1"
   duplicacyFullPath = Join-Path -Path "$($PSScriptRoot)" -ChildPath "duplicacy"
   duplicacyDebug = $false
   globalOptions = "-log"
@@ -19,36 +21,45 @@ function execute($command, $arg, $logFile) {
 }
 
 function main {
-  $tasks = @()
+  $duplicacyTasks = @()
   switch($command -split '\+') {
     help {
       Write-Host "Help"
       exit
     }
+
+    updateSelf {
+      (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
+      break
+    }
+
+    # Duplicacy commands
     backup {
-      $tasks += $_
+      $duplicacyTasks += $_
     }
     check {
-      $tasks += $_
+      $duplicacyTasks += $_
     }
     prune {
-      $tasks += $_
+      $duplicacyTasks += $_
     }
   }
 
-  if (!$repository -Or !(Test-Path -Path "$repository")) {
-    Write-Host "Repository '$($repository)' does not exist"
-    exit
-  }
-
-  if ($options.duplicacyDebug) {
-    $options.globalOptions += " -debug"
-  }
-
-  Set-Location "$repository"
-  $logFile = Join-Path -Path ".duplicacy" -ChildPath "logs" | Join-Path -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
-  foreach ($task in $tasks) {
-    execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task] -join " ") $logFile
+  if ($duplicacyTasks) {
+    if ($options.duplicacyDebug) {
+      $options.globalOptions += " -debug"
+    }
+  
+    if (!$repository -Or !(Test-Path -Path "$repository")) {
+      Write-Host "Repository '$($repository)' does not exist"
+      exit
+    }
+  
+    Set-Location "$repository"
+    $logFile = Join-Path -Path ".duplicacy" -ChildPath "logs" | Join-Path -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+    foreach ($task in $duplicacyTasks) {
+      execute $options.duplicacyFullPath ($options.globalOptions,$task,$options[$task] -join " ") $logFile
+    }
   }
 }
 
