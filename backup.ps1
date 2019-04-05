@@ -8,8 +8,8 @@ param (
 
 $options = @{
   selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
-  selfFullPath = Join-Path -Path "$($PSScriptRoot)" -ChildPath "backup.ps1"
-  duplicacyFullPath = Join-Path -Path "$($PSScriptRoot)" -ChildPath "duplicacy"
+  selfFullPath = "$PSCommandPath"
+  duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
   duplicacyDebug = $false
   globalOptions = "-log"
   backup = "-stats -vss"
