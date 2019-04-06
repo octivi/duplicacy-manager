@@ -31,21 +31,28 @@ function execute {
 function main {
   $duplicacyTasks = @()
 
+  $repositoryExists = $false
   if ($repository -And (Test-Path -Path "$repository")) {
-    $repositoryExists = $true
-  }
-  else {
-    $repositoryExists = $false
+    if (Test-Path -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")) {
+      $repositoryExists = $true
+    }
+    else {
+      Write-Host "Directory '$repository' exists, but does not look like a Duplicacy backup repository"
+      exit
+    }
   }
   
   $logDir = Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
   $logDirExists = Test-Path -Path "$logDir"
   $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+  if ($repositoryExists -And !$logDirExists) {
+    New-Item -ItemType Directory -Path "$logDir"
+  }
 
   switch($commands) {
     cleanLogs {
       if ($logDirExists) {
-        Get-ChildItem "$($logDir)/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
+        Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
       }
       else {
         Write-Host "Log directory '$logDir' does not exist"
@@ -66,14 +73,18 @@ function main {
     }
 
     init {
-      if ($repositoryExists) {
+      if (!$repository) {
+        Write-Host "Backup repository not provided"
+        exit
+      }
+      elseif ($repositoryExists) {
         Write-Host "Backup repository '$repository' already exists and will not be initialized"
         exit
       }
       else {
         New-Item -ItemType Directory -Path "$repository"
         New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
-        New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+        New-Item -ItemType Directory -Path "$logDir"
       }
       $duplicacyTasks += $_
     }
