@@ -28,7 +28,9 @@ function execute {
     [Parameter(Mandatory = $true)][string]$arg,
     [Parameter(Mandatory = $true)][string]$logFile
   )
+  log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logfile"
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
+  log "Duplicacy finished" DEBUG "$logfile"
 }
 
 function showHelp {
@@ -69,7 +71,7 @@ function main {
     $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
     $logDirExists = Test-Path -Path "$logDir"
     $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
-    if (!$logDirExists) {
+    if (-not $logDirExists) {
       New-Item -ItemType Directory -Path "$logDir"
     }
     log "Logging to '$logFile'" INFO "$logfile"
@@ -102,7 +104,7 @@ function main {
     }
 
     init {
-      if (!$repository) {
+      if (-not $repository) {
         log "Backup repository not provided" ERROR
         showHelp
         exit
@@ -142,7 +144,7 @@ function main {
       $options.globalOptions += " -debug"
     }
   
-    if (!$repositoryExists) {
+    if (-not $repositoryExists) {
       log "Backup repository '$repository' does not exist" ERROR
       showHelp
       exit
@@ -158,9 +160,7 @@ function main {
         $optionArguments = ""
       }
       $allArguments = $options.globalOptions,$task,$optionArguments,$remainingArguments -join " "
-      log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logfile"
       execute $options.duplicacyFullPath $allArguments $logFile
-      log "Duplicacy finished" DEBUG "$logfile"
     }
     Set-Location "$pwd"
   }
