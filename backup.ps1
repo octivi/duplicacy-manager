@@ -19,6 +19,9 @@ $options = @{
   prune = "-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7"
 }
 
+# By setting $InformationPreference to 'Continue' we ensure any information message is displayed on console.
+$InformationPreference = "Continue"
+
 function execute {
   param (
     [Parameter(Mandatory = $true)][string]$command,
@@ -29,7 +32,21 @@ function execute {
 }
 
 function showHelp {
-  Write-Host "Help"
+  Write-Output "Help"
+}
+
+function log {
+  param (
+    [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)][ValidateNotNullOrEmpty()][Alias("LogContent")][string]$message, 
+    [Parameter(Mandatory=$false)][ValidateSet("ERROR","WARN","INFO", "DEBUG")][string]$level="INFO",
+    [Parameter(Mandatory=$false)][Alias('LogPath')][string]$path
+  )
+
+  $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+  "$date $level $message"
+  if ($path) {
+    "$date $level $message" | Out-File -FilePath "$logFile" -Append
+  }
 }
 
 function main {
@@ -41,23 +58,31 @@ function main {
       $repositoryExists = $true
     }
     else {
-      Write-Host "Directory '$repository' exists, but does not look like a Duplicacy backup repository"
+      log "Directory '$repository' exists, but does not look like a Duplicacy backup repository" ERROR
       showHelp
       exit
     }
   }
   
-  $logDir = Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
-  $logDirExists = Test-Path -Path "$logDir"
-  $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
-  if ($repositoryExists -And !$logDirExists) {
-    New-Item -ItemType Directory -Path "$logDir"
+  $logDirExists = $false
+  if ($repositoryExists) {
+    $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
+    $logDirExists = Test-Path -Path "$logDir"
+    $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+    if (!$logDirExists) {
+      New-Item -ItemType Directory -Path "$logDir"
+    }
+    log "Logging to '$logFile'" INFO "$logfile"
   }
 
   switch($commands) {
     cleanLogs {
       if ($logDirExists) {
+        log "Cleaning logs older than $($options.keepLogsForDays) days" INFO "$logfile"
         Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
+      }
+      else {
+        log "Not cleaning logs, log directory '$logDir' does not exist" DEBUG
       }
     }
 
@@ -67,25 +92,28 @@ function main {
 
     # Duplicacy commands
     backup {
+      log "Backup" INFO
       $duplicacyTasks += $_
     }
 
     check {
+      log "Check" INFO
       $duplicacyTasks += $_
     }
 
     init {
       if (!$repository) {
-        Write-Host "Backup repository not provided"
+        log "Backup repository not provided" ERROR
         showHelp
         exit
       }
       elseif ($repositoryExists) {
-        Write-Host "Backup repository '$repository' already exists and will not be initialized"
+        log "Backup repository '$repository' already exists and will not be initialized" ERROR
         showHelp
         exit
       }
       else {
+        log "Creating directories for backup repository '$repository'" INFO
         New-Item -ItemType Directory -Path "$repository"
         New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
         New-Item -ItemType Directory -Path "$logDir"
@@ -94,10 +122,12 @@ function main {
     }
     
     list {
+      log "List" INFO
       $duplicacyTasks += $_
     }
 
     prune {
+      log "Prune" INFO
       $duplicacyTasks += $_
     }
 
@@ -113,7 +143,7 @@ function main {
     }
   
     if (!$repositoryExists) {
-      Write-Host "Backup repository '$repository' does not exist"
+      log "Backup repository '$repository' does not exist" ERROR
       showHelp
       exit
     }
@@ -127,7 +157,10 @@ function main {
       else {
         $optionArguments = ""
       }
-      execute $options.duplicacyFullPath ($options.globalOptions,$task,$optionArguments,$remainingArguments -join " ") $logFile
+      $allArguments = $options.globalOptions,$task,$optionArguments,$remainingArguments -join " "
+      log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logfile"
+      execute $options.duplicacyFullPath $allArguments $logFile
+      log "Duplicacy finished" DEBUG "$logfile"
     }
     Set-Location "$pwd"
   }
