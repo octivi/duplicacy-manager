@@ -28,6 +28,10 @@ function execute {
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
 }
 
+function showHelp {
+  Write-Host "Help"
+}
+
 function main {
   $duplicacyTasks = @()
 
@@ -38,6 +42,7 @@ function main {
     }
     else {
       Write-Host "Directory '$repository' exists, but does not look like a Duplicacy backup repository"
+      showHelp
       exit
     }
   }
@@ -53,9 +58,6 @@ function main {
     cleanLogs {
       if ($logDirExists) {
         Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
-      }
-      else {
-        Write-Host "Log directory '$logDir' does not exist"
       }
     }
 
@@ -75,10 +77,12 @@ function main {
     init {
       if (!$repository) {
         Write-Host "Backup repository not provided"
+        showHelp
         exit
       }
       elseif ($repositoryExists) {
         Write-Host "Backup repository '$repository' already exists and will not be initialized"
+        showHelp
         exit
       }
       else {
@@ -98,7 +102,7 @@ function main {
     }
 
     default {
-      Write-Host "Help"
+      showHelp
       exit
     }
   }
@@ -110,6 +114,7 @@ function main {
   
     if (!$repositoryExists) {
       Write-Host "Backup repository '$repository' does not exist"
+      showHelp
       exit
     }
   
