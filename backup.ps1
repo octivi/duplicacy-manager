@@ -122,8 +122,9 @@ function main {
           log "Creating directory structure for backup repository '$repository'" INFO
           New-Item -ItemType Directory -Path "$repository"
           $repositoryDir = (Resolve-Path -Path "$repository")
-          New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
-          New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+          $duplicacyDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy"
+          New-Item -ItemType Directory -Path "$duplicacyDir"
+          New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
           log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
           log "Next steps:" INFO "$logFile"
           log "1. Enter backup repository directory:" INFO "$logFile"
@@ -137,10 +138,10 @@ function main {
           log "      ln -s /media/data" INFO "$logFile"
           log "3. Create your own or fetch filters file from" INFO "$logFile"
           log "   https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only" INFO "$logFile"
-          log "   and save it as $(Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy")/filters file" INFO "$logFile"
+          log "   and save it as $(Join-Path -Path "$duplicacyDir" -ChildPath "filters") file" INFO "$logFile"
           log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
-          log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) backup <storage url>" INFO "$logFile"
-          log "    where <storage url>" 
+          log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) -repository '$repositoryDir' -pref-dir '$duplicacyDir' backup <storage url>" INFO "$logFile"
+          log "   where <storage url>" 
           log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
           log "   $($options.duplicacyFullPath) $($options.globalOptions) backup $($options.backup)"
         }
