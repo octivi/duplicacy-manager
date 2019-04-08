@@ -42,12 +42,12 @@ function log {
   param (
     [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)][ValidateNotNullOrEmpty()][Alias("LogContent")][string]$message, 
     [Parameter(Mandatory=$false)][ValidateSet("ERROR","WARN","INFO", "DEBUG")][string]$level="INFO",
-    [Parameter(Mandatory=$false)][Alias('LogPath')][string]$path
+    [Parameter(Mandatory=$false)][Alias('LogPath')][string]$logFile
   )
 
   $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
   "$date $level $message"
-  if ($path) {
+  if ($logFile) {
     "$date $level $message" | Out-File -FilePath "$logFile" -Append
   }
 }
