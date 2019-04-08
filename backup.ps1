@@ -121,9 +121,28 @@ function main {
         else {
           log "Creating directory structure for backup repository '$repository'" INFO
           New-Item -ItemType Directory -Path "$repository"
+          $repositoryDir = (Resolve-Path -Path "$repository")
           New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
           New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
-          log "Created directory structure for backup repository '$(Resolve-Path -Path "$repository")'" INFO "$logFile"
+          log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
+          log "Next steps:" INFO "$logFile"
+          log "1. Enter backup repository directory:" INFO "$logFile"
+          log "   cd $repositoryDir" INFO "$logFile"
+          log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+          log "   2.1. On Windows, e.g." INFO "$logFile"
+          log "      mklink /d C C:\" INFO "$logFile"
+          log "      mklink /d D D:\" INFO "$logFile"
+          log "   2.1. On Linux / MacOS, e.g." INFO "$logFile"
+          log "      ln -s /home" INFO "$logFile"
+          log "      ln -s /media/data" INFO "$logFile"
+          log "3. Create your own or fetch filters file from" INFO "$logFile"
+          log "   https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only" INFO "$logFile"
+          log "   and save it as $(Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy")/filters file" INFO "$logFile"
+          log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
+          log "   $($options.duplicacyFullPath) -log init -encrypt backup <storage url>" INFO "$logFile"
+          log "    where <storage url>" 
+          log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
+          log "   $($options.duplicacyFullPath) -log backup -stats"
         }
       }
       else {
