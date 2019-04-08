@@ -139,10 +139,10 @@ function main {
           log "   https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only" INFO "$logFile"
           log "   and save it as $(Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy")/filters file" INFO "$logFile"
           log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
-          log "   $($options.duplicacyFullPath) -log init -encrypt backup <storage url>" INFO "$logFile"
+          log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) backup <storage url>" INFO "$logFile"
           log "    where <storage url>" 
           log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
-          log "   $($options.duplicacyFullPath) -log backup -stats"
+          log "   $($options.duplicacyFullPath) $($options.globalOptions) backup $($options.backup)"
         }
       }
       else {
