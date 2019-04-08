@@ -28,10 +28,10 @@ function execute {
     [Parameter(Mandatory = $true)][string]$arg,
     [Parameter(Mandatory = $true)][string]$logFile
   )
-  log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logfile"
+  log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logFile"
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
   $exitCode = $LASTEXITCODE
-  log "Duplicacy finished with exit code: $exitCode" DEBUG "$logfile"
+  log "Duplicacy finished with exit code: $exitCode" DEBUG "$logFile"
 }
 
 function showHelp {
@@ -55,33 +55,45 @@ function log {
 function main {
   $duplicacyTasks = @()
 
-  $repositoryExists = $false
-  if ($repository -And (Test-Path -Path "$repository")) {
-    if (Test-Path -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")) {
-      $repositoryExists = $true
-    }
-    else {
-      log "Directory '$repository' exists, but does not look like a Duplicacy backup repository" ERROR
-      showHelp
-      exit
+  $repositoryDir = ""
+  $repositoryDirExists = $false
+  $repositoryInitialized = $false
+  $logDir = ""
+  $logDirExists = $false
+  $logFile = ""
+
+  if ($repository) {
+    $repositoryDirExists = Test-Path -Path "$repository"
+  
+    if ($repositoryDirExists) {
+      $repositoryDir = (Resolve-Path -Path "$repository")
+      $repositoryInitialized = Test-Path -Path (Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy")
+
+      if ($repositoryInitialized) {
+        $logDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
+        $logDirExists = Test-Path -Path "$logDir"
+
+        if (-not $logDirExists) {
+          New-Item -ItemType Directory -Path "$logDir"
+          $logDirExists = Test-Path -Path "$logDir"
+        }
+
+        $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+        log "Logging to '$logFile'" INFO "$logFile"
+      }
+      else {
+        log "Directory '$repositoryDir' exists, but does not look like a Duplicacy backup repository" ERROR
+        showHelp
+        exit
+      }
     }
   }
   
-  $logDirExists = $false
-  if ($repositoryExists) {
-    $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
-    $logDirExists = Test-Path -Path "$logDir"
-    $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
-    if (-not $logDirExists) {
-      New-Item -ItemType Directory -Path "$logDir"
-    }
-    log "Logging to '$logFile'" INFO "$logfile"
-  }
-
-  switch($commands) {
-    cleanLogs {
+  switch -Regex ($commands) {
+    # Our commands
+    '^cleanLogs$' {
       if ($logDirExists) {
-        log "Cleaning logs older than $($options.keepLogsForDays) days" INFO "$logfile"
+        log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
         Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
       }
       else {
@@ -89,48 +101,41 @@ function main {
       }
     }
 
-    updateSelf {
+    '^updateSelf$' {
       (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
     }
 
-    # Duplicacy commands
-    backup {
-      log "Backup" INFO
-      $duplicacyTasks += $_
-    }
-
-    check {
-      log "Check" INFO
-      $duplicacyTasks += $_
-    }
-
-    init {
-      if (-not $repository) {
-        log "Backup repository not provided" ERROR
-        showHelp
-        exit
-      }
-      elseif ($repositoryExists) {
-        log "Backup repository '$repository' already exists and will not be initialized" ERROR
-        showHelp
-        exit
+    # Special case for "init" command, that is a little different than other commands:
+    # requires that repository is provided, but does not exist and does not allow stacking
+    # with other commands.
+    '^init$' {
+      if ($repository) {
+        if ($repositoryInitialized) {
+          log "Backup repository '$repositoryDir' already initialized" ERROR "$logFile"
+          showHelp
+        }
+        elseif ($repositoryDirExists) {
+          log "Directory '$repositoryDir' already exists" ERROR "$logFile"
+          showHelp
+        }
+        else {
+          log "Creating directory structure for backup repository '$repository'" INFO
+          New-Item -ItemType Directory -Path "$repository"
+          New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
+          New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+          log "Created directory structure for backup repository '$(Resolve-Path -Path "$repository")'" INFO "$logFile"
+        }
       }
       else {
-        log "Creating directories for backup repository '$repository'" INFO
-        New-Item -ItemType Directory -Path "$repository"
-        New-Item -ItemType Directory -Path (Join-Path -Path "$repository" -ChildPath ".duplicacy")
-        New-Item -ItemType Directory -Path "$logDir"
+        log "Backup repository name not provided" ERROR
+        showHelp
       }
-      $duplicacyTasks += $_
-    }
-    
-    list {
-      log "List" INFO
-      $duplicacyTasks += $_
+      exit
     }
 
-    prune {
-      log "Prune" INFO
+    # Other Duplicacy commands
+    '^(backup|check|list|prune)$' {
+      log "Running '$_' command" INFO "$logFile"
       $duplicacyTasks += $_
     }
 
@@ -145,8 +150,18 @@ function main {
       $options.globalOptions += " -debug"
     }
   
-    if (-not $repositoryExists) {
+    if (-not $repository) {
+      log "Backup repository name not provided" ERROR
+      showHelp
+      exit
+    }
+    elseif (-not $repositoryDirExists) {
       log "Backup repository '$repository' does not exist" ERROR
+      showHelp
+      exit
+    }
+    elseif (-not $repositoryInitialized) {
+      log "Backup repository '$repositoryDir' exists, but does not look like a Duplicacy backup repository" ERROR
       showHelp
       exit
     }
