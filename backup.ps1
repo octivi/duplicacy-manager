@@ -30,7 +30,8 @@ function execute {
   )
   log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logfile"
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
-  log "Duplicacy finished" DEBUG "$logfile"
+  $exitCode = $LASTEXITCODE
+  log "Duplicacy finished with exit code: $exitCode" DEBUG "$logfile"
 }
 
 function showHelp {
