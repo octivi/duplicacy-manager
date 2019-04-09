@@ -13,7 +13,6 @@ $options = @{
   duplicacyVersion = "2.1.2"
   duplicacyArchitecture = "win_x64"
   duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
-  duplicacyDebug = $false
   globalOptions = "-log"
   backup = "-stats -vss"
   check = "-stats"
@@ -176,10 +175,6 @@ function main {
   }
 
   if ($duplicacyTasks) {
-    if ($options.duplicacyDebug) {
-      $options.globalOptions += " -debug"
-    }
-  
     if (-not $repository) {
       log "Backup repository name not provided" ERROR
       showHelp
