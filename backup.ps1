@@ -103,7 +103,7 @@ function main {
     }
 
     '^updateSelf$' {
-      log "Updating self from '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO
+      log "Updating self from '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
     }
 
@@ -113,7 +113,7 @@ function main {
       if ($options.duplicacyArchitecture -match "^win_") {
         $duplicacyFullPath += ".exe"
       }
-      log "Updating Duplicacy from '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO
+      log "Updating Duplicacy from '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($duplicacyUrl, $duplicacyFullPath)
     }
 
