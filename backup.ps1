@@ -9,6 +9,7 @@ param (
 $options = @{
   selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
   selfFullPath = "$PSCommandPath"
+  filtersUrl = "https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only"
   keepLogsForDays = 30
   duplicacyVersion = "2.1.2"
   duplicacyArchitecture = "win_x64"
@@ -115,6 +116,12 @@ function main {
       }
       log "Updating Duplicacy from '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($duplicacyUrl, $duplicacyFullPath)
+    }
+
+    '^updateFilters$' {
+      $filtersFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "filters"
+      log "Updating filters from '$($options.filtersfUrl)' to '$($filtersFullPath)'" INFO "$logFile"
+      (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $filtersFullPath)
     }
 
     # Special case for "init" command, that is a little different than other commands:
