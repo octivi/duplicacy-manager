@@ -126,7 +126,7 @@ function main {
           showHelp
         }
         elseif ($repositoryDirExists) {
-          log "Directory '$repositoryDir' already exists" ERROR "$logFile"
+          log "Directory '$repositoryDir' already exists" ERROR
           showHelp
         }
         else {
