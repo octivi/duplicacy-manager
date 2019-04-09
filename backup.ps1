@@ -103,16 +103,18 @@ function main {
     }
 
     '^updateSelf$' {
+      log "Updating self from '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO
       (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
     }
 
     '^updateDuplicacy$' {
-      $url = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyArchitecture)_$($options.duplicacyVersion).exe"
+      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyArchitecture)_$($options.duplicacyVersion).exe"
       $duplicacyFullPath = $options.duplicacyFullPath
       if ($options.duplicacyArchitecture -match "^win_") {
         $duplicacyFullPath += ".exe"
       }
-      (New-Object System.Net.WebClient).DownloadFile($url, $duplicacyFullPath)
+      log "Updating Duplicacy from '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO
+      (New-Object System.Net.WebClient).DownloadFile($duplicacyUrl, $duplicacyFullPath)
     }
 
     # Special case for "init" command, that is a little different than other commands:
