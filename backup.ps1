@@ -10,6 +10,7 @@ $options = @{
   selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
   selfFullPath = "$PSCommandPath"
   filtersUrl = "https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only"
+  filtersFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "filters.example"
   keepLogsForDays = 30
   duplicacyVersion = "2.1.2"
   duplicacyArchitecture = "win_x64"
@@ -119,9 +120,8 @@ function main {
     }
 
     '^updateFilters$' {
-      $filtersFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "filters"
-      log "Updating filters from '$($options.filtersfUrl)' to '$($filtersFullPath)'" INFO "$logFile"
-      (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $filtersFullPath)
+      log "Updating filters from '$($options.filtersfUrl)' to '$($options.filtersFullPath)'" INFO "$logFile"
+      (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $options.filtersFullPath)
     }
 
     # Special case for "init" command, that is a little different than other commands:
@@ -144,6 +144,7 @@ function main {
           $duplicacyDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy"
           New-Item -ItemType Directory -Path "$duplicacyDir"
           New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
+          New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryDir" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
           log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
           log "Next steps:" INFO "$logFile"
           log "1. Enter backup repository directory:" INFO "$logFile"
@@ -157,9 +158,9 @@ function main {
           log "      ln -s /media/data" INFO "$logFile"
           log "   2.3. On MacOS, e.g." INFO "$logFile"
           log "      ln -s /Users" INFO "$logFile"
-          log "3. Create your own or fetch filters file from" INFO "$logFile"
-          log "   https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only" INFO "$logFile"
-          log "   and save it as $(Join-Path -Path "$duplicacyDir" -ChildPath "filters") file" INFO "$logFile"
+          log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDir -ChildPath filters)'." INFO "$logFile"
+          log "   You can use '$($options.filtersFullPath)' as an example. If it does not exist, fetch a new one by executing:" INFO "$logFile"
+          log "   $($options.selfFullPath) updateFilters" INFO "$logFile"
           log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
           log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) -repository '$repositoryDir' -pref-dir '$duplicacyDir' backup <storage url>" INFO "$logFile"
           log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
