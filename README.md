@@ -30,14 +30,17 @@ Example directory structure:
 │   │   ├── logs
 │   │   └── preferences
 │   ├── C
-│   └── D
+│   ├── D
+|   └── filters -> .duplicacy/filters
 ├── backup_repository_2
 │   └── .duplicacy
 │   │   ├── filters
 │   │   ├── logs
 │   │   └── preferences
-│   ├── E
+|   ├── filters -> .duplicacy/filters
+│   └── E
 ├── backup.exe
 ├── duplicacy.exe
+├── filters.example
 └── logs
 ```
