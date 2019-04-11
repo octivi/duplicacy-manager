@@ -1,9 +1,40 @@
 # Copyright (C) 2019  Marcin Engelmann <mengelmann@octivi.com>
+[cmdletbinding(
+  DefaultParameterSetName="help"
+)]
 
 param (
-  [parameter(Position=0)][string[]]$commands = @("help"),
-  [parameter(Position=1)][string]$repository,
-  [Parameter(ValueFromRemainingArguments=$true)][string]$remainingArguments
+  [parameter(ParameterSetName='help', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='cleanLogs', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='updateDuplicacy', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='updateFilters', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='updateSelf', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='init', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='backup', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='check', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='list', Mandatory=$true, Position=0)]
+  [parameter(ParameterSetName='prune', Mandatory=$true, Position=0)]
+  [ValidateSet("help", "cleanLogs", "updateDuplicacy", "updateFilters", "updateSelf", "init", "backup", "check", "list", "prune")]
+  [string[]]
+  $commands,
+
+  [parameter(ParameterSetName='cleanLogs', Mandatory=$true, Position=1)]
+  [parameter(ParameterSetName='init', Mandatory=$true, Position=1)]
+  [parameter(ParameterSetName='backup', Mandatory=$true, Position=1)]
+  [parameter(ParameterSetName='check', Mandatory=$true, Position=1)]
+  [parameter(ParameterSetName='list', Mandatory=$true, Position=1)]
+  [parameter(ParameterSetName='prune', Mandatory=$true, Position=1)]
+  [ValidateNotNullOrEmpty()]
+  [string]
+  $repository,
+
+  [parameter(ParameterSetName='init', ValueFromRemainingArguments=$true)]
+  [parameter(ParameterSetName='backup', ValueFromRemainingArguments=$true)]
+  [parameter(ParameterSetName='check', ValueFromRemainingArguments=$true)]
+  [parameter(ParameterSetName='list', ValueFromRemainingArguments=$true)]
+  [parameter(ParameterSetName='prune', ValueFromRemainingArguments=$true)]
+  [string]
+  $remainingArguments
 )
 
 $options = @{
