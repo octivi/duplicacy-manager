@@ -1,10 +1,101 @@
 # Copyright (C) 2019  Marcin Engelmann <mengelmann@octivi.com>
+[CmdletBinding()]
 
 param (
   [parameter(Position=0)][string[]]$commands,
   [parameter(Position=1)][string]$repository,
   [Parameter(ValueFromRemainingArguments=$true)][string]$remainingArguments
 )
+
+DynamicParam {
+  # Repository parameter required and the directory must exists
+  $repositoryAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $repositoryAttribute.Position = 1
+  $repositoryAttribute.HelpMessage = "Enter backup repository path"
+  $repositoryAttribute.Mandatory = $true
+  $repositoryExistsAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $repositoryExistsAttributes.Add($repositoryAttribute)
+  $repositoryExistsAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $repositoryExistsAttributes.Add((New-Object System.Management.Automation.ValidateScriptAttribute({
+    if (-not (Test-Path -Path $_ -PathType Container)) {
+      Throw "The '$_' backup repository does not exist."
+    }
+    else {
+      $true
+    }
+  })))
+  $repositoryExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryExistsAttributes)
+
+  # Repository parameter required and the directory must exists and the directory is initialized Duplicacy's backup repository
+  $repositoryExistsAndInitializedAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $repositoryExistsAndInitializedAttributes.Add($repositoryAttribute)
+  $repositoryExistsAndInitializedAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $repositoryExistsAndInitializedAttributes.Add((New-Object System.Management.Automation.ValidateScriptAttribute({
+    if (-not (Test-Path -Path $_ -PathType Container)) {
+      Throw "The '$_' backup repository does not exist."
+    }
+    elseif (-not (Test-Path -Path (Join-Path -Path $_ -ChildPath ".duplicacy"))) {
+      Throw "The '$_' backup repository does not look like an initialized Duplicacy's backup repository."
+    }
+    else {
+      $true
+    }
+  })))
+  $repositoryExistsAndInitializedParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryExistsAndInitializedAttributes)
+
+  # Repository parameter required and the directory must not exists
+  $repositoryNotExistsAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $repositoryNotExistsAttributes.Add($repositoryAttribute)
+  $repositoryNotExistsAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $repositoryNotExistsAttributes.Add((New-Object System.Management.Automation.ValidateScriptAttribute({
+    if (Test-Path -Path $_ -PathType Container) {
+      Throw "The '$_' directory exists."
+    }
+    else {
+      $true
+    }
+  })))
+  $repositoryNotExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryNotExistsAttributes)
+
+  # Remaining parameters
+  $remainingAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $remainingAttribute.HelpMessage = "Remaining parameteres"
+  $remainingAttribute.Mandatory = $false
+  $remainingAttribute.ValueFromRemainingArguments = $true
+  $remainingAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $remainingAttributes.Add($remainingAttribute)
+  $remainingParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("remainingArguments", [string[]], $remainingAttributes)
+
+  $paramDictionary = New-Object -Type System.Management.Automation.RuntimeDefinedParameterDictionary
+
+  switch -Regex ($commands) {
+    '^cleanLogs$' {
+      if (-not $paramDictionary.ContainsKey("repository")) {
+        $paramDictionary.Add("repository", $repositoryExistsAndInitializedParameter)
+      }
+    }
+    '^(backup|check|list|prune)$' {
+      if (-not $paramDictionary.ContainsKey("repository")) {
+        $paramDictionary.Add("repository", $repositoryExistsAndInitializedParameter)
+      }
+      if (-not $paramDictionary.ContainsKey("remainingArguments")) {
+        $paramDictionary.Add("remainingArguments", $remainingParameter)
+      }
+    }
+    '^init$' {
+      if (-not $paramDictionary.ContainsKey("repository")) {
+        $paramDictionary.Add("repository", $repositoryNotExistsParameter)
+      }
+      if (-not $paramDictionary.ContainsKey("remainingArguments")) {
+        $paramDictionary.Add("remainingArguments", $remainingParameter)
+      }
+    }
+  }
+
+  return $paramDictionary
+}
+
+Process {
 
 $options = @{
   selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
@@ -219,4 +310,7 @@ function main {
   }
 }
 
+$PSBoundParameters
+
 main
+}
