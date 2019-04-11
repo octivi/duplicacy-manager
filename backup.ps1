@@ -2,9 +2,7 @@
 [CmdletBinding()]
 
 param (
-  [parameter(Position=0)][string[]]$commands,
-  [parameter(Position=1)][string]$repository,
-  [Parameter(ValueFromRemainingArguments=$true)][string]$remainingArguments
+  [parameter(Position=0, Mandatory=$true)][string[]]$commands = ("help")
 )
 
 DynamicParam {
