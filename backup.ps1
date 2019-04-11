@@ -48,7 +48,7 @@ function log {
     [Parameter(Mandatory=$false)][Alias('LogPath')][string]$logFile
   )
 
-  $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+  $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff')
   "$date $level $message"
   if ($logFile) {
     "$date $level $message" | Out-File -FilePath "$logFile" -Append
