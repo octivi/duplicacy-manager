@@ -95,6 +95,12 @@ DynamicParam {
   return $paramDictionary
 }
 
+Begin {
+  $commands = $PSBoundParameters["commands"]
+  $repository = $PSBoundParameters["repository"]
+  $remainingArguments = $PSBoundParameters["remainingArguments"]
+}
+
 Process {
 
 $options = @{
@@ -309,8 +315,6 @@ function main {
     Set-Location "$pwd"
   }
 }
-
-$PSBoundParameters
 
 main
 }
