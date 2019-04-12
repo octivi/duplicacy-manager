@@ -1,7 +1,7 @@
 # Copyright (C) 2019  Marcin Engelmann <mengelmann@octivi.com>
 
 param (
-  [parameter(Position=0)][string[]]$commands = @("help"),
+  [parameter(Position=0)][string[]]$commands,
   [parameter(Position=1)][string]$repository,
   [Parameter(ValueFromRemainingArguments=$true)][string]$remainingArguments
 )
@@ -44,8 +44,8 @@ function showHelp {
 function log {
   param (
     [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)][ValidateNotNullOrEmpty()][Alias("LogContent")][string]$message, 
-    [Parameter(Mandatory=$false)][ValidateSet("ERROR","WARN","INFO", "DEBUG")][string]$level="INFO",
-    [Parameter(Mandatory=$false)][Alias('LogPath')][string]$logFile
+    [ValidateSet("ERROR","WARN","INFO", "DEBUG")][string]$level="INFO",
+    [Alias('LogPath')][string]$logFile
   )
 
   $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff')
