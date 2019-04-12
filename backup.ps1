@@ -120,7 +120,7 @@ function main {
     }
 
     '^updateFilters$' {
-      log "Updating filters from '$($options.filtersfUrl)' to '$($options.filtersFullPath)'" INFO "$logFile"
+      log "Updating filters from '$($options.filtersUrl)' to '$($options.filtersFullPath)'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $options.filtersFullPath)
     }
 
