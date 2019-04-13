@@ -150,10 +150,26 @@ function log {
   )
 
   $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff')
-  "$date $level $message"
+  Write-Output "$date $level $message"
   if ($logFile) {
     "$date $level $message" | Out-File -FilePath "$logFile" -Append
   }
+}
+
+function logDirPath {
+  param (
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repository
+  )
+
+  return (Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+}
+
+function logFilePath {
+  param (
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repository
+  )
+
+  return (Join-Path -Path (logDirPath($repository)) -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')))
 }
 
 function main {
@@ -161,8 +177,7 @@ function main {
 
   $logFile = ""
   if ($repository -and (Test-Path -Path "$repository")) {
-    $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
-    $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+    $logFile = logFilePath($repository)
     log "Logging to '$logFile'" INFO "$logFile"
   }
 
@@ -170,12 +185,12 @@ function main {
     # Our commands
     '^cleanLogs$' {
       if (Test-Path -Path "$logDir") {
-        $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
+        $logDir = logDirPath($repository)
         log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
         Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
       }
       else {
-        log "Not cleaning logs, log directory '$logDir' does not exist" DEBUG
+        log "Not cleaning logs, log directory '$logDir' does not exist" ERROR
       }
     }
 
@@ -211,6 +226,8 @@ function main {
       New-Item -ItemType Directory -Path "$duplicacyDir"
       New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
       New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryDir" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
+      $logFile = logFilePath($repository)
+      log "Logging to '$logFile'" INFO "$logFile"
       log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
       log "Next steps:" INFO "$logFile"
       log "1. Enter backup repository directory:" INFO "$logFile"
