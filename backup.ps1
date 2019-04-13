@@ -1,10 +1,97 @@
 # Copyright (C) 2019  Marcin Engelmann <mengelmann@octivi.com>
+[CmdletBinding()]
 
 param (
-  [parameter(Position=0)][string[]]$commands,
-  [parameter(Position=1)][string]$repository,
-  [Parameter(ValueFromRemainingArguments=$true)][string]$remainingArguments
+  [parameter(Position=0, Mandatory=$true)]
+  [ValidateSet("help", "cleanLogs", "updateDuplicacy", "updateFilters", "updateSelf", "init", "backup", "check", "list", "prune")]
+  [string[]]
+  $commands
 )
+
+DynamicParam {
+  $repositoryAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $repositoryAttribute.Position = 1
+  $repositoryAttribute.HelpMessage = "Enter backup repository path"
+  $repositoryAttribute.Mandatory = $true
+
+  # Repository parameter required and the directory must exists and the directory is initialized Duplicacy's backup repository
+  $repositoryExistsAndInitializedAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $repositoryExistsAndInitializedAttributes.Add($repositoryAttribute)
+  $repositoryExistsAndInitializedAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $repositoryExistsAndInitializedAttributes.Add((New-Object System.Management.Automation.ValidateScriptAttribute({
+    if (-not (Test-Path -Path $_ -PathType Container)) {
+      Throw "The '$_' backup repository does not exist."
+    }
+    elseif (-not (Test-Path -Path (Join-Path -Path $_ -ChildPath ".duplicacy" | Join-Path -ChildPath "preferences") -PathType Leaf)) {
+      Throw "The '$_' backup repository does not look like an initialized Duplicacy's backup repository."
+    }
+    else {
+      $true
+    }
+  })))
+  $repositoryExistsAndInitializedParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryExistsAndInitializedAttributes)
+
+  # Repository parameter required and the directory must not exists
+  $repositoryNotExistsAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $repositoryNotExistsAttributes.Add($repositoryAttribute)
+  $repositoryNotExistsAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $repositoryNotExistsAttributes.Add((New-Object System.Management.Automation.ValidateScriptAttribute({
+    if (Test-Path -Path $_ -PathType Container) {
+      Throw "The '$_' directory already exists."
+    }
+    else {
+      $true
+    }
+  })))
+  $repositoryNotExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryNotExistsAttributes)
+
+  # Remaining parameters
+  $remainingAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $remainingAttribute.HelpMessage = "Remaining parameteres"
+  $remainingAttribute.Mandatory = $false
+  $remainingAttribute.ValueFromRemainingArguments = $true
+  $remainingAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $remainingAttributes.Add($remainingAttribute)
+  $remainingParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("remainingArguments", [string[]], $remainingAttributes)
+
+  $paramDictionary = New-Object -Type System.Management.Automation.RuntimeDefinedParameterDictionary
+
+  switch -Regex ($commands) {
+    '^cleanLogs$' {
+      if (-not $paramDictionary.ContainsKey("repository")) {
+        $paramDictionary.Add("repository", $repositoryExistsAndInitializedParameter)
+      }
+    }
+    '^(updateDuplicacy|updateFilters|updateSelf)$' {
+    }
+    '^(backup|check|list|prune)$' {
+      if (-not $paramDictionary.ContainsKey("repository")) {
+        $paramDictionary.Add("repository", $repositoryExistsAndInitializedParameter)
+      }
+      if (-not $paramDictionary.ContainsKey("remainingArguments")) {
+        $paramDictionary.Add("remainingArguments", $remainingParameter)
+      }
+    }
+    '^init$' {
+      if (-not $paramDictionary.ContainsKey("repository")) {
+        $paramDictionary.Add("repository", $repositoryNotExistsParameter)
+      }
+      if (-not $paramDictionary.ContainsKey("remainingArguments")) {
+        $paramDictionary.Add("remainingArguments", $remainingParameter)
+      }
+    }
+  }
+
+  return $paramDictionary
+}
+
+Begin {
+  $commands = $PSBoundParameters["commands"]
+  $repository = $PSBoundParameters["repository"]
+  $remainingArguments = $PSBoundParameters["remainingArguments"]
+}
+
+Process {
 
 $options = @{
   selfUrl = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
@@ -58,44 +145,18 @@ function log {
 function main {
   $duplicacyTasks = @()
 
-  $repositoryDir = ""
-  $repositoryDirExists = $false
-  $repositoryInitialized = $false
-  $logDir = ""
-  $logDirExists = $false
   $logFile = ""
-
   if ($repository) {
-    $repositoryDirExists = Test-Path -Path "$repository"
-  
-    if ($repositoryDirExists) {
-      $repositoryDir = (Resolve-Path -Path "$repository")
-      $repositoryInitialized = Test-Path -Path (Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy")
-
-      if ($repositoryInitialized) {
-        $logDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
-        $logDirExists = Test-Path -Path "$logDir"
-
-        if (-not $logDirExists) {
-          New-Item -ItemType Directory -Path "$logDir"
-          $logDirExists = Test-Path -Path "$logDir"
-        }
-
-        $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
-        log "Logging to '$logFile'" INFO "$logFile"
-      }
-      else {
-        log "Directory '$repositoryDir' exists, but does not look like a Duplicacy backup repository" ERROR
-        showHelp
-        exit
-      }
-    }
+    $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
+    $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+    log "Logging to '$logFile'" INFO "$logFile"
   }
-  
+
   switch -Regex ($commands) {
     # Our commands
     '^cleanLogs$' {
-      if ($logDirExists) {
+      if (Test-Path -Path "$logDir") {
+        $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
         log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
         Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
       }
@@ -128,50 +189,33 @@ function main {
     # requires that repository is provided, but does not exist and does not allow stacking
     # with other commands.
     '^init$' {
-      if ($repository) {
-        if ($repositoryInitialized) {
-          log "Backup repository '$repositoryDir' already initialized" ERROR "$logFile"
-          showHelp
-        }
-        elseif ($repositoryDirExists) {
-          log "Directory '$repositoryDir' already exists" ERROR
-          showHelp
-        }
-        else {
-          log "Creating directory structure for backup repository '$repository'" INFO
-          New-Item -ItemType Directory -Path "$repository"
-          $repositoryDir = (Resolve-Path -Path "$repository")
-          $duplicacyDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy"
-          New-Item -ItemType Directory -Path "$duplicacyDir"
-          New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
-          New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryDir" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
-          log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
-          log "Next steps:" INFO "$logFile"
-          log "1. Enter backup repository directory:" INFO "$logFile"
-          log "   cd $repositoryDir" INFO "$logFile"
-          log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
-          log "   2.1. On Windows, e.g." INFO "$logFile"
-          log "      mklink /d C C:\" INFO "$logFile"
-          log "      mklink /d D D:\" INFO "$logFile"
-          log "   2.1. On Linux, e.g." INFO "$logFile"
-          log "      ln -s /home" INFO "$logFile"
-          log "      ln -s /media/data" INFO "$logFile"
-          log "   2.3. On MacOS, e.g." INFO "$logFile"
-          log "      ln -s /Users" INFO "$logFile"
-          log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDir -ChildPath filters)'." INFO "$logFile"
-          log "   You can use '$($options.filtersFullPath)' as an example. If it does not exist, fetch a new one by executing:" INFO "$logFile"
-          log "   $($options.selfFullPath) updateFilters" INFO "$logFile"
-          log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
-          log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) -repository '$repositoryDir' -pref-dir '$duplicacyDir' backup <storage url>" INFO "$logFile"
-          log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
-          log "   $($options.duplicacyFullPath) $($options.globalOptions) backup $($options.backup)" INFO "$logFile"
-        }
-      }
-      else {
-        log "Backup repository name not provided" ERROR
-        showHelp
-      }
-      exit
+      log "Creating directory structure for backup repository '$repository'" INFO
+      New-Item -ItemType Directory -Path "$repository"
+      $repositoryDir = (Resolve-Path -Path "$repository")
+      $duplicacyDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy"
+      New-Item -ItemType Directory -Path "$duplicacyDir"
+      New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
+      New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryDir" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
+      log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
+      log "Next steps:" INFO "$logFile"
+      log "1. Enter backup repository directory:" INFO "$logFile"
+      log "   cd $repositoryDir" INFO "$logFile"
+      log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+      log "   2.1. On Windows, e.g." INFO "$logFile"
+      log "      mklink /d C C:\" INFO "$logFile"
+      log "      mklink /d D D:\" INFO "$logFile"
+      log "   2.1. On Linux, e.g." INFO "$logFile"
+      log "      ln -s /home" INFO "$logFile"
+      log "      ln -s /media/data" INFO "$logFile"
+      log "   2.3. On MacOS, e.g." INFO "$logFile"
+      log "      ln -s /Users" INFO "$logFile"
+      log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDir -ChildPath filters)'." INFO "$logFile"
+      log "   You can use '$($options.filtersFullPath)' as an example. If it does not exist, fetch a new one by executing:" INFO "$logFile"
+      log "   $($options.selfFullPath) updateFilters" INFO "$logFile"
+      log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
+      log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) -repository '$repositoryDir' -pref-dir '$duplicacyDir' backup <storage url>" INFO "$logFile"
+      log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
+      log "   $($options.duplicacyFullPath) $($options.globalOptions) backup $($options.backup)" INFO "$logFile"
     }
 
     # Other Duplicacy commands
@@ -187,22 +231,6 @@ function main {
   }
 
   if ($duplicacyTasks) {
-    if (-not $repository) {
-      log "Backup repository name not provided" ERROR
-      showHelp
-      exit
-    }
-    elseif (-not $repositoryDirExists) {
-      log "Backup repository '$repository' does not exist" ERROR
-      showHelp
-      exit
-    }
-    elseif (-not $repositoryInitialized) {
-      log "Backup repository '$repositoryDir' exists, but does not look like a Duplicacy backup repository" ERROR
-      showHelp
-      exit
-    }
-  
     $pwd = Get-Location
     Set-Location "$repository"
     foreach ($task in $duplicacyTasks) {
@@ -220,3 +248,4 @@ function main {
 }
 
 main
+}
