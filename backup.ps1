@@ -171,9 +171,10 @@ function main {
     }
 
     '^updateDuplicacy$' {
-      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyArchitecture)_$($options.duplicacyVersion).exe"
+      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyArchitecture)_$($options.duplicacyVersion)"
       $duplicacyFullPath = $options.duplicacyFullPath
       if ($options.duplicacyArchitecture -match "^win_") {
+        $duplicacyUrl += ".exe"
         $duplicacyFullPath += ".exe"
       }
       log "Updating Duplicacy from '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO "$logFile"
