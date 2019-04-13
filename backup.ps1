@@ -45,6 +45,16 @@ DynamicParam {
   })))
   $repositoryNotExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryNotExistsAttributes)
 
+  # Storage parameter required (for init command)
+  $storageAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $storageAttribute.HelpMessage = "Storage URL"
+  $storageAttribute.Position = 2
+  $storageAttribute.Mandatory = $true
+  $storageAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $storageAttributes.Add($storageAttribute)
+  $storageAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $storageParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("storage", [string], $storageAttributes)
+
   # Remaining parameters
   $remainingAttribute = New-Object System.Management.Automation.ParameterAttribute
   $remainingAttribute.HelpMessage = "Remaining parameteres"
@@ -79,6 +89,9 @@ DynamicParam {
       if (-not $paramDictionary.ContainsKey("remainingArguments")) {
         $paramDictionary.Add("remainingArguments", $remainingParameter)
       }
+      if (-not $paramDictionary.ContainsKey("storage")) {
+        $paramDictionary.Add("storage", $storageParameter)
+      }
     }
   }
 
@@ -89,6 +102,7 @@ Begin {
   $commands = $PSBoundParameters["commands"]
   $repository = $PSBoundParameters["repository"]
   $remainingArguments = $PSBoundParameters["remainingArguments"]
+  $storage = $PSBoundParameters["storage"]
 }
 
 Process {
@@ -146,7 +160,7 @@ function main {
   $duplicacyTasks = @()
 
   $logFile = ""
-  if ($repository) {
+  if ($repository -and (Test-Path -Path "$repository")) {
     $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
     $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
     log "Logging to '$logFile'" INFO "$logFile"
