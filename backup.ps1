@@ -101,7 +101,7 @@ DynamicParam {
 Begin {
   $commands = $PSBoundParameters["commands"]
   $repositoryPath = $PSBoundParameters["repositoryPath"]
-  $remainingArguments = $PSBoundParameters["remainingArguments"]
+  $remainingArguments = $PSBoundParameters["remainingArguments"] -join " "
   $storage = $PSBoundParameters["storage"]
 }
 
