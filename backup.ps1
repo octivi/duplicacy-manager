@@ -132,7 +132,7 @@ function execute {
     [Parameter(Mandatory = $true)][string]$arg,
     [Parameter(Mandatory = $true)][string]$logFile
   )
-  log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logFile"
+  log "Executing Duplicacy: '$command --% $arg'" DEBUG "$logFile"
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
   $exitCode = $LASTEXITCODE
   log "Duplicacy finished with exit code: $exitCode" DEBUG "$logFile"
