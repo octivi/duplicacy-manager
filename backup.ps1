@@ -29,7 +29,7 @@ DynamicParam {
       $true
     }
   })))
-  $repositoryExistsAndInitializedParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryExistsAndInitializedAttributes)
+  $repositoryExistsAndInitializedParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repositoryPath", [string], $repositoryExistsAndInitializedAttributes)
 
   # Repository parameter required and the directory must not exists
   $repositoryNotExistsAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
@@ -43,7 +43,7 @@ DynamicParam {
       $true
     }
   })))
-  $repositoryNotExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryNotExistsAttributes)
+  $repositoryNotExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repositoryPath", [string], $repositoryNotExistsAttributes)
 
   # Storage parameter required (for init command)
   $storageAttribute = New-Object System.Management.Automation.ParameterAttribute
@@ -68,23 +68,23 @@ DynamicParam {
 
   switch -Regex ($commands) {
     '^cleanLogs$' {
-      if (-not $paramDictionary.ContainsKey("repository")) {
-        $paramDictionary.Add("repository", $repositoryExistsAndInitializedParameter)
+      if (-not $paramDictionary.ContainsKey("repositoryPath")) {
+        $paramDictionary.Add("repositoryPath", $repositoryExistsAndInitializedParameter)
       }
     }
     '^(updateDuplicacy|updateFilters|updateSelf)$' {
     }
     '^(backup|check|list|prune)$' {
-      if (-not $paramDictionary.ContainsKey("repository")) {
-        $paramDictionary.Add("repository", $repositoryExistsAndInitializedParameter)
+      if (-not $paramDictionary.ContainsKey("repositoryPath")) {
+        $paramDictionary.Add("repositoryPath", $repositoryExistsAndInitializedParameter)
       }
       if (-not $paramDictionary.ContainsKey("remainingArguments")) {
         $paramDictionary.Add("remainingArguments", $remainingParameter)
       }
     }
     '^init$' {
-      if (-not $paramDictionary.ContainsKey("repository")) {
-        $paramDictionary.Add("repository", $repositoryNotExistsParameter)
+      if (-not $paramDictionary.ContainsKey("repositoryPath")) {
+        $paramDictionary.Add("repositoryPath", $repositoryNotExistsParameter)
       }
       if (-not $paramDictionary.ContainsKey("remainingArguments")) {
         $paramDictionary.Add("remainingArguments", $remainingParameter)
@@ -100,7 +100,7 @@ DynamicParam {
 
 Begin {
   $commands = $PSBoundParameters["commands"]
-  $repository = $PSBoundParameters["repository"]
+  $repositoryPath = $PSBoundParameters["repositoryPath"]
   $remainingArguments = $PSBoundParameters["remainingArguments"]
   $storage = $PSBoundParameters["storage"]
 }
@@ -114,7 +114,7 @@ $options = @{
   filtersFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "filters.example"
   keepLogsForDays = 30
   duplicacyVersion = "2.1.2"
-  duplicacyArchitecture = "win_x64"
+  duplicacyOS = "win_x64"
   duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
   globalOptions = "-background -log"
   backup = "-stats -vss"
@@ -125,13 +125,13 @@ $options = @{
 # By setting $InformationPreference to 'Continue' we ensure any information message is displayed on console.
 $InformationPreference = "Continue"
 
-function execute {
+function executeDuplicacy {
   param (
-    [Parameter(Mandatory = $true)][string]$command,
     [Parameter(Mandatory = $true)][string]$arg,
     [Parameter(Mandatory = $true)][string]$logFile
   )
-  log "Executing Duplicacy: '$command --% $arg'" DEBUG "$logFile"
+  $command = $options.duplicacyFullPath
+  log "Executing Duplicacy command: '$command $arg'" DEBUG "$logFile"
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
   $exitCode = $LASTEXITCODE
   log "Duplicacy finished with exit code: $exitCode" DEBUG "$logFile"
@@ -157,51 +157,43 @@ function log {
 
 function logDirPath {
   param (
-    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repository
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repositoryPath
   )
 
-  return (Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+  return (Join-Path -Path "$repositoryPath" -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
 }
 
 function logFilePath {
   param (
-    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repository
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repositoryPath
   )
 
-  return (Join-Path -Path (logDirPath($repository)) -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')))
+  return (Join-Path -Path (logDirPath($repositoryPath)) -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')))
 }
 
 function main {
   $duplicacyTasks = @()
 
   $logFile = ""
-  if ($repository -and (Test-Path -Path "$repository")) {
-    $logFile = logFilePath($repository)
+  if ($repositoryPath -and (Test-Path -Path "$repositoryPath")) {
+    $repositoryFullPath = Resolve-Path -LiteralPath "$repositoryPath"
+    $repositoryName = (Get-Item -Path $repositoryFullPath).BaseName
+    $logDir = logDirPath($repositoryFullPath)
+    $logFile = logFilePath($repositoryFullPath)
     log "Logging to '$logFile'" INFO "$logFile"
   }
 
   switch -Regex ($commands) {
     # Our commands
     '^cleanLogs$' {
-      if (Test-Path -Path "$logDir") {
-        $logDir = logDirPath($repository)
-        log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
-        Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
-      }
-      else {
-        log "Not cleaning logs, log directory '$logDir' does not exist" ERROR
-      }
-    }
-
-    '^updateSelf$' {
-      log "Updating self from '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO "$logFile"
-      (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
+      log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
+      Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
     }
 
     '^updateDuplicacy$' {
-      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyArchitecture)_$($options.duplicacyVersion)"
+      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyOS)_$($options.duplicacyVersion)"
       $duplicacyFullPath = $options.duplicacyFullPath
-      if ($options.duplicacyArchitecture -match "^win_") {
+      if ($options.duplicacyOS -match "^win_") {
         $duplicacyUrl += ".exe"
         $duplicacyFullPath += ".exe"
       }
@@ -212,6 +204,11 @@ function main {
     '^updateFilters$' {
       log "Updating filters from '$($options.filtersUrl)' to '$($options.filtersFullPath)'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $options.filtersFullPath)
+    }
+
+    '^updateSelf$' {
+      log "Updating self from '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO "$logFile"
+      (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
     }
 
     '^init$' {
@@ -266,24 +263,24 @@ function main {
         Set-Item env:\$($storageEnv.env) -Value $password
       }
 
-      log "Creating directory structure for backup repository '$repository'" INFO
-      New-Item -ItemType Directory -Path "$repository"
-      $repositoryDir = Resolve-Path -Path "$repository"
-      $duplicacyDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy"
-      New-Item -ItemType Directory -Path "$duplicacyDir"
-      New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
-      New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryDir" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
-      $logFile = logFilePath($repository)
+      log "Creating directory structure for backup repository '$repositoryPath'" INFO
+      New-Item -ItemType Directory -Path "$repositoryPath"
+      $repositoryFullPath = Resolve-Path -LiteralPath "$repositoryPath"
+      $repositoryName = (Get-Item -Path $repositoryPath).BaseName
+      $duplicacyDirPath = Join-Path -Path "$repositoryFullPath" -ChildPath ".duplicacy"
+      New-Item -ItemType Directory -Path "$duplicacyDirPath"
+      New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDirPath" -ChildPath "logs")
+      New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryFullPath" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
+      $logFile = logFilePath($repositoryFullPath)
       log "Logging to '$logFile'" INFO "$logFile"
-      log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
+      log "Created directory structure for backup repository '$repositoryName' in '$repositoryFullPath'" INFO "$logFile"
 
       $pwd = Get-Location
-      Set-Location "$repository"
-      $repositoryBaseName = (Get-Item -Path $repository).BaseName
-      $initArguments = $options.globalOptions,"init",$remainingArguments,$repositoryBaseName,$storage -join " "
+      Set-Location "$repositoryPath"
+      $initArguments = $options.globalOptions,"init",$remainingArguments,$repositoryName,$storage -join " "
       $backupArguments = $options.globalOptions,"backup",$remainingArguments -join " "
-      execute $options.duplicacyFullPath $initArguments $logFile
-      execute $options.duplicacyFullPath $backupArguments $logFile
+      executeDuplicacy $initArguments $logFile
+      executeDuplicacy $backupArguments $logFile
       Set-Location "$pwd"
 
       # Unset environmental variables to remove passwords from memory
@@ -293,7 +290,7 @@ function main {
 
       log "Next steps:" INFO "$logFile"
       log "1. Enter backup repository directory:" INFO "$logFile"
-      log "   cd $repositoryDir" INFO "$logFile"
+      log "   cd $repositoryFullPath" INFO "$logFile"
       log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
       log "   2.1. On Windows, e.g." INFO "$logFile"
       log "      mklink /d C C:\" INFO "$logFile"
@@ -302,14 +299,14 @@ function main {
       log "      ln -s /home" INFO "$logFile"
       log "   2.3. On MacOS, e.g." INFO "$logFile"
       log "      ln -s /Users" INFO "$logFile"
-      log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDir -ChildPath filters)'." INFO "$logFile"
+      log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
       log "   You can use '$($options.filtersFullPath)' as an example. If it does not exist, fetch a new one by executing:" INFO "$logFile"
       log "   $($options.selfFullPath) updateFilters" INFO "$logFile"
     }
 
     # Other Duplicacy commands
     '^(backup|check|list|prune)$' {
-      log "Running '$_' command" INFO "$logFile"
+      log "Scheduled executing '$_' command for backup repository '$repositoryName'" INFO "$logFile"
       $duplicacyTasks += $_
     }
 
@@ -321,7 +318,7 @@ function main {
 
   if ($duplicacyTasks) {
     $pwd = Get-Location
-    Set-Location "$repository"
+    Set-Location "$repositoryPath"
     foreach ($task in $duplicacyTasks) {
       if ($options.ContainsKey($task)) {
         $optionArguments = $options[$task]
@@ -330,7 +327,7 @@ function main {
         $optionArguments = ""
       }
       $allArguments = $options.globalOptions,$task,$optionArguments,$remainingArguments -join " "
-      execute $options.duplicacyFullPath $allArguments $logFile
+      executeDuplicacy $allArguments $logFile
     }
     Set-Location "$pwd"
   }
