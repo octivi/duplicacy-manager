@@ -127,12 +127,12 @@ $InformationPreference = "Continue"
 
 function executeDuplicacy {
   param (
-    [Parameter(Mandatory = $true)][string]$arg,
+    [Parameter(Mandatory = $true)][string]$arguments,
     [Parameter(Mandatory = $true)][string]$logFile
   )
   $command = $options.duplicacyFullPath
-  log "Executing Duplicacy command: '$command $arg'" DEBUG "$logFile"
-  & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
+  log "Executing Duplicacy command: '$command $arguments'" DEBUG "$logFile"
+  & $command "--%" $arguments *>&1 | Tee-Object -FilePath "$logFile" -Append
   $exitCode = $LASTEXITCODE
   log "Duplicacy finished with exit code: $exitCode" DEBUG "$logFile"
 }
@@ -178,7 +178,6 @@ function main {
   if ($repositoryPath -and (Test-Path -Path "$repositoryPath")) {
     $repositoryFullPath = Resolve-Path -LiteralPath "$repositoryPath"
     $repositoryName = (Get-Item -Path $repositoryFullPath).BaseName
-    $logDir = logDirPath($repositoryFullPath)
     $logFile = logFilePath($repositoryFullPath)
     log "Logging to '$logFile'" INFO "$logFile"
   }
@@ -186,7 +185,8 @@ function main {
   switch -Regex ($commands) {
     # Our commands
     '^cleanLogs$' {
-      log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
+      $logDir = logDirPath($repositoryFullPath)
+      log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir'" INFO "$logFile"
       Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
     }
 
