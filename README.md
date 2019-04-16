@@ -29,21 +29,22 @@ Example directory structure:
 .
 ├── backup_repository_1
 │   └── .duplicacy
+│   │   ├── cache
 │   │   ├── filters
 │   │   ├── logs
 │   │   └── preferences
 │   ├── C
 │   ├── D
-|   └── filters -> .duplicacy/filters
+|   └── filters.backup -> .duplicacy/filters
 ├── backup_repository_2
 │   └── .duplicacy
+│   │   ├── cache
 │   │   ├── filters
 │   │   ├── logs
 │   │   └── preferences
-|   ├── filters -> .duplicacy/filters
+|   ├── filters.backup -> .duplicacy/filters
 │   └── E
-├── backup.exe
+├── backup.ps1
 ├── duplicacy.exe
-├── filters.example
-└── logs
+└── filters.example
 ```
