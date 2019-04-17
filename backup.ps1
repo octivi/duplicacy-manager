@@ -114,16 +114,37 @@ $options = @{
   filtersFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "filters.example"
   keepLogsForDays = 30
   duplicacyVersion = "2.1.2"
-  duplicacyOS = "win_x64"
   duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
   globalOptions = "-background -log"
-  backup = "-stats -vss"
+  # Enable the Volume Shadow Copy service (Windows and macOS using APFS only).
+  enableVSS = $true
+  backup = "-stats"
   check = "-stats"
   prune = "-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7"
 }
 
 # By setting $InformationPreference to 'Continue' we ensure any information message is displayed on console.
 $InformationPreference = "Continue"
+
+function getOSVersion {
+  if ($PSVersionTable.PSVersion.Major -ge 6) {
+    # PowerShell Core 6.x added three new automatic variables to determine whether PowerShell is running in a given OS: $IsWindows, $IsMacOs, and $IsLinux.
+    # https://docs.microsoft.com/en-us/powershell/scripting/whats-new/what-s-new-in-powershell-core-60?view=powershell-6
+    if ($IsLinux) {
+      return "lin"
+    }
+    elseif ($IsMacOS) {
+      return "osx"
+    }
+    else {
+      return "win"
+    }
+  }
+  else {
+    # Powershell < 6 is probably on Windows.
+    return "win"
+  }
+}
 
 function executeDuplicacy {
   param (
@@ -172,14 +193,25 @@ function logFilePath {
 }
 
 function main {
+  $OSVersion = getOSVersion
   $duplicacyTasks = @()
-
   $logFile = ""
   if ($repositoryPath -and (Test-Path -Path "$repositoryPath")) {
     $repositoryFullPath = Resolve-Path -LiteralPath "$repositoryPath"
     $repositoryName = (Get-Item -Path $repositoryFullPath).BaseName
     $logFile = logFilePath($repositoryFullPath)
     log "Logging to '$logFile'" INFO "$logFile"
+  }
+
+  if ($options.enableVSS) {
+    if (($OSVersion -eq "win") -and ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")) {
+      # Volume Shadow Copy is supported on Windows when executed with Administrator privileges.
+      $options.backup += " -vss"
+    }
+    elseif ($OSVersion -eq "osx") {
+      # Volume Shadow Copy is supported on macOS using APFS only.
+      $options.backup += " -vss"
+    }
   }
 
   switch -Regex ($commands) {
@@ -191,9 +223,9 @@ function main {
     }
 
     '^updateDuplicacy$' {
-      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($options.duplicacyOS)_$($options.duplicacyVersion)"
+      $duplicacyUrl = "https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($OSVersion)_x64_$($options.duplicacyVersion)"
       $duplicacyFullPath = $options.duplicacyFullPath
-      if ($options.duplicacyOS -match "^win_") {
+      if ($OSVersion -eq "win") {
         $duplicacyUrl += ".exe"
         $duplicacyFullPath += ".exe"
       }
