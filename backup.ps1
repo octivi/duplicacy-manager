@@ -229,17 +229,17 @@ function main {
         $duplicacyUrl += ".exe"
         $duplicacyFullPath += ".exe"
       }
-      log "Updating Duplicacy from '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO "$logFile"
+      log "Updating Duplicacy from Duplicacy's GitHub repository '$($duplicacyUrl)' to '$duplicacyFullPath'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($duplicacyUrl, $duplicacyFullPath)
     }
 
     '^updateFilters$' {
-      log "Updating filters from '$($options.filtersUrl)' to '$($options.filtersFullPath)'" INFO "$logFile"
+      log "Updating filters from TheBestPessimist's GitHub repository '$($options.filtersUrl)' to '$($options.filtersFullPath)'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $options.filtersFullPath)
     }
 
     '^updateSelf$' {
-      log "Updating self from '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO "$logFile"
+      log "Updating self from our own GitHub repository '$($options.selfUrl)' to '$($options.selfFullPath)'" INFO "$logFile"
       (New-Object System.Net.WebClient).DownloadFile($options.selfUrl, $options.selfFullPath)
     }
 
