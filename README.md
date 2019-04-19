@@ -2,7 +2,10 @@
 
 **Work in progress. DO NOT use in production.**
 
-The wrapper on [Duplicacy](https://github.com/gilbertchen/duplicacy/) that allows managing backups efficiently.
+The wrapper on [Duplicacy CLI](https://github.com/gilbertchen/duplicacy/) that allows managing backups efficiently.
+
+Duplicacy CLI (Command Line Interface) is free for personal use and commercial trial. Commercial use of Duplicacy CLI
+requires per-user licenses available from [Duplicacy website](https://duplicacy.com/).
 
 ## Goals
 
