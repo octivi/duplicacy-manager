@@ -291,7 +291,10 @@ function main {
       $duplicacyDirPath = Join-Path -Path "$repositoryFullPath" -ChildPath ".duplicacy"
       New-Item -ItemType Directory -Path "$duplicacyDirPath"
       New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDirPath" -ChildPath "logs")
-      New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryFullPath" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
+      # Creating a symbolic link to a non existent file fails on Windows
+      if ($OSVersion -ne "win") {
+        New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryFullPath" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
+      }
       $logFile = logFilePath($repositoryFullPath)
       log "Logging to '$logFile'" INFO "$logFile"
       log "Created directory structure for backup repository '$repositoryName' in '$repositoryFullPath'" INFO "$logFile"
