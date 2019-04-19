@@ -203,17 +203,6 @@ function main {
     log "Logging to '$logFile'" INFO "$logFile"
   }
 
-  if ($options.enableVSS) {
-    if (($OSVersion -eq "win") -and ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")) {
-      # Volume Shadow Copy is supported on Windows when executed with Administrator privileges.
-      $options.backup += " -vss"
-    }
-    elseif ($OSVersion -eq "osx") {
-      # Volume Shadow Copy is supported on macOS using APFS only.
-      $options.backup += " -vss"
-    }
-  }
-
   switch -Regex ($commands) {
     # Our commands
     '^cleanLogs$' {
@@ -340,6 +329,15 @@ function main {
     '^(backup|check|list|prune)$' {
       log "Scheduled executing '$_' command for backup repository '$repositoryName'" INFO "$logFile"
       $duplicacyTasks += $_
+
+      if (($_ -eq "backup") -and $options.enableVSS) {
+        if (($OSVersion -eq "osx") -or (($OSVersion -eq "win") -and ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator"))) {
+          # Volume Shadow Copy is supported on Windows when executed with Administrator privileges.
+          # Volume Shadow Copy is supported on macOS using APFS only.
+          $options.backup += " -vss"
+          log "Enabling Volume Shadow Copy (VSS) for 'backup' command" INFO "$logFile"
+        }
+      }
     }
 
     default {
