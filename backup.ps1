@@ -45,6 +45,16 @@ DynamicParam {
   })))
   $repositoryNotExistsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("repository", [string], $repositoryNotExistsAttributes)
 
+  # Storage parameter required (for init command)
+  $storageAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $storageAttribute.HelpMessage = "Storage URL"
+  $storageAttribute.Position = 2
+  $storageAttribute.Mandatory = $true
+  $storageAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $storageAttributes.Add($storageAttribute)
+  $storageAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $storageParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("storage", [string], $storageAttributes)
+
   # Remaining parameters
   $remainingAttribute = New-Object System.Management.Automation.ParameterAttribute
   $remainingAttribute.HelpMessage = "Remaining parameteres"
@@ -79,6 +89,9 @@ DynamicParam {
       if (-not $paramDictionary.ContainsKey("remainingArguments")) {
         $paramDictionary.Add("remainingArguments", $remainingParameter)
       }
+      if (-not $paramDictionary.ContainsKey("storage")) {
+        $paramDictionary.Add("storage", $storageParameter)
+      }
     }
   }
 
@@ -89,6 +102,7 @@ Begin {
   $commands = $PSBoundParameters["commands"]
   $repository = $PSBoundParameters["repository"]
   $remainingArguments = $PSBoundParameters["remainingArguments"]
+  $storage = $PSBoundParameters["storage"]
 }
 
 Process {
@@ -105,7 +119,6 @@ $options = @{
   globalOptions = "-background -log"
   backup = "-stats -vss"
   check = "-stats"
-  init = " -encrypt"
   prune = "-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7"
 }
 
@@ -118,7 +131,7 @@ function execute {
     [Parameter(Mandatory = $true)][string]$arg,
     [Parameter(Mandatory = $true)][string]$logFile
   )
-  log "Executing Duplicacy: '$($options.duplicacyFullPath) $allArguments'" DEBUG "$logFile"
+  log "Executing Duplicacy: '$command --% $arg'" DEBUG "$logFile"
   & $command "--%" $arg *>&1 | Tee-Object -FilePath "$logFile" -Append
   $exitCode = $LASTEXITCODE
   log "Duplicacy finished with exit code: $exitCode" DEBUG "$logFile"
@@ -136,19 +149,34 @@ function log {
   )
 
   $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff')
-  "$date $level $message"
+  Write-Output "$date $level $message"
   if ($logFile) {
     "$date $level $message" | Out-File -FilePath "$logFile" -Append
   }
+}
+
+function logDirPath {
+  param (
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repository
+  )
+
+  return (Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs")
+}
+
+function logFilePath {
+  param (
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$repository
+  )
+
+  return (Join-Path -Path (logDirPath($repository)) -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss')))
 }
 
 function main {
   $duplicacyTasks = @()
 
   $logFile = ""
-  if ($repository) {
-    $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
-    $logFile = Join-Path -Path "$logDir" -ChildPath ("backup-log-" + $(Get-Date).ToString('yyyyMMdd-HHmmss'))
+  if ($repository -and (Test-Path -Path "$repository")) {
+    $logFile = logFilePath($repository)
     log "Logging to '$logFile'" INFO "$logFile"
   }
 
@@ -156,12 +184,12 @@ function main {
     # Our commands
     '^cleanLogs$' {
       if (Test-Path -Path "$logDir") {
-        $logDir = Join-Path -Path (Resolve-Path -Path "$repository") -ChildPath ".duplicacy" | Join-Path -ChildPath "logs"
+        $logDir = logDirPath($repository)
         log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir' " INFO "$logFile"
         Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
       }
       else {
-        log "Not cleaning logs, log directory '$logDir' does not exist" DEBUG
+        log "Not cleaning logs, log directory '$logDir' does not exist" ERROR
       }
     }
 
@@ -186,18 +214,83 @@ function main {
       (New-Object System.Net.WebClient).DownloadFile($options.filtersUrl, $options.filtersFullPath)
     }
 
-    # Special case for "init" command, that is a little different than other commands:
-    # requires that repository is provided, but does not exist and does not allow stacking
-    # with other commands.
     '^init$' {
+      # Based on https://forum.duplicacy.com/t/supported-storage-backends/1107
+      # and https://forum.duplicacy.com/t/passwords-credentials-and-environment-variables/1094
+      $storageEnvs = @()
+      $storageEnvs += @{env = "DUPLICACY_PASSWORD"; description = "backup repository encryption password (leave blank for unencrypted backup)"}
+
+      switch -Regex ($storage) {
+        '^(azure://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_AZURE_TOKEN"; description = "Azure storage account access key"}
+        }
+        '^(b2://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_B2_ID"; description = "Backblaze account ID"}
+          $storageEnvs += @{env = "DUPLICACY_B2_KEY"; description = "Backblaze application key"}
+        }
+        '^(dropbox://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_DROPBOX_TOKEN"; description = "Dropbox token"}
+        }
+        '^(gcs://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_GCS_TOKEN"; description = "Google Cloud Storage token file"}
+        }
+        '^(gcd://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_GCD_TOKEN"; description = "Google Drive token file"}
+        }
+        '^(hubic://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_HUBIC_TOKEN"; description = "Hubic token file"}
+        }
+        '^(one://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_ONE_TOKEN"; description = "Microsoft OneDrive token file"}
+        }
+        '^(s3://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_S3_ID"; description = "S3 ID"}
+          $storageEnvs += @{env = "DUPLICACY_S3_SECRET"; description = "S3 secret"}
+        }
+        '^(sftp://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_SSH_PASSWORD"; description = "SSH password"}
+        }
+        '^(wasabi://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_WASABI_KEY"; description = "Wasabi key"}
+          $storageEnvs += @{env = "DUPLICACY_WASABI_SECRET"; description = "Wasabi secret"}
+        }
+        '^(webdav://.+)$' {
+          $storageEnvs += @{env = "DUPLICACY_WEBDAV_PASSWORD"; description = "WebDAV password"}
+        }
+      }
+
+      # Set environmental variables to provide passwords to Duplicacy
+      foreach ($storageEnv in $storageEnvs) {
+        $response = Read-host "Enter $($storageEnv.description)" -AsSecureString
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($response))
+        Set-Item env:\$($storageEnv.env) -Value $password
+      }
+
       log "Creating directory structure for backup repository '$repository'" INFO
       New-Item -ItemType Directory -Path "$repository"
-      $repositoryDir = (Resolve-Path -Path "$repository")
+      $repositoryDir = Resolve-Path -Path "$repository"
       $duplicacyDir = Join-Path -Path "$repositoryDir" -ChildPath ".duplicacy"
       New-Item -ItemType Directory -Path "$duplicacyDir"
       New-Item -ItemType Directory -Path (Join-Path -Path "$duplicacyDir" -ChildPath "logs")
       New-Item -ItemType SymbolicLink -Path (Join-Path -Path "$repositoryDir" -ChildPath "filters.backup") -Target (Join-Path -Path ".duplicacy" -ChildPath "filters")
+      $logFile = logFilePath($repository)
+      log "Logging to '$logFile'" INFO "$logFile"
       log "Created directory structure for backup repository '$repositoryDir'" INFO "$logFile"
+
+      $pwd = Get-Location
+      Set-Location "$repository"
+      $repositoryBaseName = (Get-Item -Path $repository).BaseName
+      $initArguments = $options.globalOptions,"init",$remainingArguments,$repositoryBaseName,$storage -join " "
+      $backupArguments = $options.globalOptions,"backup",$remainingArguments -join " "
+      execute $options.duplicacyFullPath $initArguments $logFile
+      execute $options.duplicacyFullPath $backupArguments $logFile
+      Set-Location "$pwd"
+
+      # Unset environmental variables to remove passwords from memory
+      foreach ($storageEnv in $storageEnvs) {
+        Remove-Item env:\$($storageEnv.env)
+      }
+
       log "Next steps:" INFO "$logFile"
       log "1. Enter backup repository directory:" INFO "$logFile"
       log "   cd $repositoryDir" INFO "$logFile"
@@ -207,16 +300,11 @@ function main {
       log "      mklink /d D D:\" INFO "$logFile"
       log "   2.1. On Linux, e.g." INFO "$logFile"
       log "      ln -s /home" INFO "$logFile"
-      log "      ln -s /media/data" INFO "$logFile"
       log "   2.3. On MacOS, e.g." INFO "$logFile"
       log "      ln -s /Users" INFO "$logFile"
       log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDir -ChildPath filters)'." INFO "$logFile"
       log "   You can use '$($options.filtersFullPath)' as an example. If it does not exist, fetch a new one by executing:" INFO "$logFile"
       log "   $($options.selfFullPath) updateFilters" INFO "$logFile"
-      log "4. Initialize Duplicacy repository (fast)" INFO "$logFile"
-      log "   $($options.duplicacyFullPath) $($options.globalOptions) init $($options.init) -repository '$repositoryDir' -pref-dir '$duplicacyDir' backup <storage url>" INFO "$logFile"
-      log "5. Make first backup (time depends on the size of source files and connection speed" INFO "$logFile"
-      log "   $($options.duplicacyFullPath) $($options.globalOptions) backup $($options.backup)" INFO "$logFile"
     }
 
     # Other Duplicacy commands
