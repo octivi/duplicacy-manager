@@ -115,7 +115,7 @@ $options = @{
   keepLogsForDays = 30
   duplicacyVersion = "2.1.2"
   duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
-  globalOptions = "-background -log"
+  globalOptions = "-log"
   # Enable the Volume Shadow Copy service (Windows and macOS using APFS only).
   enableVSS = $true
   backup = "-stats"
