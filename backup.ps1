@@ -260,9 +260,9 @@ function main {
       $pwd = Get-Location
       Set-Location "$repositoryPath"
       $initArguments = $options.globalOptions,"init",$remainingArguments,$repositoryName,$storage -join " "
-      $backupArguments = $options.globalOptions,"backup",$remainingArguments -join " "
-      executeDuplicacy $initArguments $logFile $false
-      executeDuplicacy $backupArguments $logFile $false
+      $backupArguments = $options.globalOptions,"backup" -join " "
+      executeDuplicacy $initArguments $logFile -tee $false
+      executeDuplicacy $backupArguments $logFile -tee $false
       Set-Location "$pwd"
 
       log "Next steps:" INFO "$logFile"
