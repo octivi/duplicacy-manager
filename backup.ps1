@@ -265,20 +265,42 @@ function main {
       executeDuplicacy $backupArguments $logFile -tee $false
       Set-Location "$pwd"
 
-      log "Next steps:" INFO "$logFile"
-      log "1. Enter backup repository directory:" INFO "$logFile"
-      log "   cd $repositoryFullPath" INFO "$logFile"
-      log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
-      log "   2.1. On Windows, e.g." INFO "$logFile"
-      log "      mklink /d C C:\" INFO "$logFile"
-      log "      mklink /d D D:\" INFO "$logFile"
-      log "   2.1. On Linux, e.g." INFO "$logFile"
-      log "      ln -s /home" INFO "$logFile"
-      log "   2.3. On MacOS, e.g." INFO "$logFile"
-      log "      ln -s /Users" INFO "$logFile"
-      log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
-      log "   You can use '$($options.filtersFullPath)' as an example. If it does not exist, fetch a new one by executing:" INFO "$logFile"
-      log "   $($options.selfFullPath) updateFilters" INFO "$logFile"
+      switch ($OSVersion) {
+        'lin' {
+          log "Next steps:" INFO "$logFile"
+          log "1. Enter backup repository directory:" INFO "$logFile"
+          log "      $ cd $repositoryFullPath" INFO "$logFile"
+          log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+          log "      $ sudo ln -s /home" INFO "$logFile"
+          log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
+          log "   You can use '$($options.filtersFullPath)' as an example." INFO "$logFile"
+          log "   If it does not exist, fetch a new one by executing:" INFO "$logFile"
+          log "      $ $($options.selfFullPath) updateFilters" INFO "$logFile"
+        }
+        'osx' {
+          log "Next steps:" INFO "$logFile"
+          log "1. Enter backup repository directory:" INFO "$logFile"
+          log "      $ cd $repositoryFullPath" INFO "$logFile"
+          log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+          log "      $ sudo ln -s /Users" INFO "$logFile"
+          log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
+          log "   You can use '$($options.filtersFullPath)' as an example." INFO "$logFile"
+          log "   If it does not exist, fetch a new one by executing:" INFO "$logFile"
+          log "      > $($options.selfFullPath) updateFilters" INFO "$logFile"
+        }
+        'win' {
+          log "Next steps:" INFO "$logFile"
+          log "1. Enter backup repository directory:" INFO "$logFile"
+          log "      PS C:\> cd $repositoryFullPath" INFO "$logFile"
+          log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+          log "      PS C:\> cmd /c mklink /d C C:\" INFO "$logFile"
+          log "      PS C:\> cmd /c mklink /d D D:\" INFO "$logFile"
+          log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
+          log "   You can use '$($options.filtersFullPath)' as an example." INFO "$logFile"
+          log "   If it does not exist, fetch a new one by executing:" INFO "$logFile"
+          log "      PS C:\> $($options.selfFullPath) updateFilters" INFO "$logFile"
+        }
+      }
     }
 
     # Other Duplicacy commands
