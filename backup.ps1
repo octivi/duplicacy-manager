@@ -86,11 +86,11 @@ DynamicParam {
       if (-not $paramDictionary.ContainsKey("repositoryPath")) {
         $paramDictionary.Add("repositoryPath", $repositoryNotExistsParameter)
       }
-      if (-not $paramDictionary.ContainsKey("remainingArguments")) {
-        $paramDictionary.Add("remainingArguments", $remainingParameter)
-      }
       if (-not $paramDictionary.ContainsKey("storage")) {
         $paramDictionary.Add("storage", $storageParameter)
+      }
+      if (-not $paramDictionary.ContainsKey("remainingArguments")) {
+        $paramDictionary.Add("remainingArguments", $remainingParameter)
       }
     }
   }
@@ -149,11 +149,17 @@ function getOSVersion {
 function executeDuplicacy {
   param (
     [Parameter(Mandatory = $true)][string]$arguments,
-    [Parameter(Mandatory = $true)][string]$logFile
+    [Parameter(Mandatory = $true)][string]$logFile,
+    [Parameter(Mandatory = $false)][boolean]$tee = $true
   )
-  $command = $options.duplicacyFullPath
-  log "Executing Duplicacy command: '$command $arguments'" DEBUG "$logFile"
-  & $command "--%" $arguments *>&1 | Tee-Object -FilePath "$logFile" -Append
+
+  log "Executing Duplicacy command: '$($options.duplicacyFullPath) $arguments'" DEBUG "$logFile"
+  if ($tee) {
+    & $options.duplicacyFullPath "--%" $arguments *>&1 | Tee-Object -FilePath "$logFile" -Append
+  }
+  else {
+    & $options.duplicacyFullPath "--%" $arguments *>&1
+  }
   $exitCode = $LASTEXITCODE
   log "Duplicacy finished with exit code: $exitCode" DEBUG "$logFile"
 }
@@ -236,57 +242,6 @@ function main {
     }
 
     '^init$' {
-      # Based on https://forum.duplicacy.com/t/supported-storage-backends/1107
-      # and https://forum.duplicacy.com/t/passwords-credentials-and-environment-variables/1094
-      $storageEnvs = @()
-      $storageEnvs += @{env = "DUPLICACY_PASSWORD"; description = "backup repository encryption password (leave blank for unencrypted backup)"}
-
-      switch -Regex ($storage) {
-        '^(azure://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_AZURE_TOKEN"; description = "Azure storage account access key"}
-        }
-        '^(b2://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_B2_ID"; description = "Backblaze account ID"}
-          $storageEnvs += @{env = "DUPLICACY_B2_KEY"; description = "Backblaze application key"}
-        }
-        '^(dropbox://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_DROPBOX_TOKEN"; description = "Dropbox token"}
-        }
-        '^(gcs://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_GCS_TOKEN"; description = "Google Cloud Storage token file"}
-        }
-        '^(gcd://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_GCD_TOKEN"; description = "Google Drive token file"}
-        }
-        '^(hubic://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_HUBIC_TOKEN"; description = "Hubic token file"}
-        }
-        '^(one://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_ONE_TOKEN"; description = "Microsoft OneDrive token file"}
-        }
-        '^(s3://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_S3_ID"; description = "S3 ID"}
-          $storageEnvs += @{env = "DUPLICACY_S3_SECRET"; description = "S3 secret"}
-        }
-        '^(sftp://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_SSH_PASSWORD"; description = "SSH password"}
-        }
-        '^(wasabi://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_WASABI_KEY"; description = "Wasabi key"}
-          $storageEnvs += @{env = "DUPLICACY_WASABI_SECRET"; description = "Wasabi secret"}
-        }
-        '^(webdav://.+)$' {
-          $storageEnvs += @{env = "DUPLICACY_WEBDAV_PASSWORD"; description = "WebDAV password"}
-        }
-      }
-
-      # Set environmental variables to provide passwords to Duplicacy
-      foreach ($storageEnv in $storageEnvs) {
-        $response = Read-host "Enter $($storageEnv.description)" -AsSecureString
-        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($response))
-        Set-Item env:\$($storageEnv.env) -Value $password
-      }
-
       log "Creating directory structure for backup repository '$repositoryPath'" INFO
       New-Item -ItemType Directory -Path "$repositoryPath"
       $repositoryFullPath = Resolve-Path -LiteralPath "$repositoryPath"
@@ -306,14 +261,9 @@ function main {
       Set-Location "$repositoryPath"
       $initArguments = $options.globalOptions,"init",$remainingArguments,$repositoryName,$storage -join " "
       $backupArguments = $options.globalOptions,"backup",$remainingArguments -join " "
-      executeDuplicacy $initArguments $logFile
-      executeDuplicacy $backupArguments $logFile
+      executeDuplicacy $initArguments $logFile $false
+      executeDuplicacy $backupArguments $logFile $false
       Set-Location "$pwd"
-
-      # Unset environmental variables to remove passwords from memory
-      foreach ($storageEnv in $storageEnvs) {
-        Remove-Item env:\$($storageEnv.env)
-      }
 
       log "Next steps:" INFO "$logFile"
       log "1. Enter backup repository directory:" INFO "$logFile"
