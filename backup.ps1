@@ -163,16 +163,19 @@ function showHelp {
 }
 
 function log {
+  [cmdletbinding()]
   param (
-    [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)][ValidateNotNullOrEmpty()][Alias("LogContent")][string]$message, 
-    [ValidateSet("ERROR","WARN","INFO", "DEBUG")][string]$level="INFO",
-    [Alias('LogPath')][string]$logFile
+    [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true)][ValidateNotNullOrEmpty()][string]$message, 
+    [Parameter(Position=1)][ValidateSet("ERROR","WARN","INFO", "DEBUG")][string]$level="INFO",
+    [Parameter(Position=2)][string]$logFile
   )
 
-  $date = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff')
-  Write-Output "$date $level $message"
-  if ($logFile) {
-    "$date $level $message" | Out-File -FilePath "$logFile" -Append
+  process {
+    $timestamp = $(Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff')
+    Write-Output "$timestamp $level $message"
+    if ($logFile) {
+      "$timestamp $level $message" | Out-File -FilePath "$logFile" -Append
+    }
   }
 }
 
