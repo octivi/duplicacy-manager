@@ -8,7 +8,7 @@ that allows managing backups efficiently.
 Duplicacy CLI (Command Line Interface) is free for personal use and commercial trial. Commercial use of
 Duplicacy CLI requires per-user licenses available from [Duplicacy website](https://duplicacy.com/).
 
-## Quick Install
+## Quick Start
 
 ### Windows
 
@@ -37,14 +37,17 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
 5. Initialize backup repository
 
    ```powershell
-   PS C:\Backup> ./backup.ps1 init <backup repository> <storage URL> -encrypt
+   PS C:\Backup> ./backup.ps1 init <backup repository local path> <storage backend> -encrypt
    ```
 
    where
-   * `<backup repository>` is backup repository name (directory will be created under `C:\Backup`
-     directory, e.g. `backup`
-   * `<storage URL>` is one of the [supported by Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107),
+   * `<backup repository local path>` is relative or absolute backup repository local path
+   * (directory will be created under `C:\Backup` directory, e.g. `backup`)
+   * `<storage backend>` is one of the [supported by Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107),
      e.g. `sftp://u00000@u00000.your-storagebox.de/duplicacy`
+
+   You will be asked to provide password to storage backend (and other credentials, depends
+   on selected backend) and password to encrypt backup.
 
 6. Configure the newly initialized backup repository (remember about filters)
 
