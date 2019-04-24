@@ -40,26 +40,30 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
    PS C:\Backup> ./backup.ps1 init <backup repository local path> <storage backend> -encrypt
    ```
 
-   where
-   * `<backup repository local path>` is relative or absolute backup repository local path
-   * (directory will be created under `C:\Backup` directory, e.g. `backup`)
+   where:
+   * `<backup repository local path>` is a relative or absolute backup repository local path
+     (directory will be created under `C:\Backup` directory, e.g. `backup`)
    * `<storage backend>` is one of the [supported by Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107),
-     e.g. `sftp://u00000@u00000.your-storagebox.de/duplicacy`
+    e.g. `sftp://u00000@u00000.your-storagebox.de/duplicacy`
 
    You will be asked to provide password to storage backend (and other credentials, depends
    on selected backend) and password to encrypt backup.
 
 6. Configure the newly initialized backup repository (remember about filters)
 
-   ```powershell
-   PS C:\Backup> ./backup.ps1 updateFilters
-   ```
+    ```powershell
+    PS C:\Backup> ./backup.ps1 updateFilters
+    ```
 
 7. Schedule backup with Windows Task Scheduler
 
     ```powershell
-    PS C:\Backup> ./backup.ps1 schedule
+    PS C:\Backup> ./backup.ps1 schedule <backup repository local path> <list of commands>
     ```
+
+    where:
+    * `<backup repository local path>` is a relative or absolute backup repository local path, e.g. `backup`
+    * `list of commands` is a comma-separated list of commands, e.g. `backup,prune,check,cleanLogs`
 
 ## Project goals
 
