@@ -37,7 +37,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
 5. Initialize backup repository
 
    ```powershell
-   PS C:\Backup> ./backup.ps1 init <backup repository> <storage URL>
+   PS C:\Backup> ./backup.ps1 init <backup repository> <storage URL> -encrypt
    ```
 
    where
