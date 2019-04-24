@@ -3,7 +3,7 @@
 
 param (
   [parameter(Position=0, Mandatory=$true)]
-  [ValidateSet("help", "cleanLogs", "updateDuplicacy", "updateFilters", "updateSelf", "init", "backup", "check", "list", "prune")]
+  [ValidateSet("help", "cleanLogs", "schedule", "updateDuplicacy", "updateFilters", "updateSelf", "init", "backup", "check", "list", "prune")]
   [string[]]
   $commands
 )
@@ -55,6 +55,16 @@ DynamicParam {
   $storageAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
   $storageParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("storage", [string], $storageAttributes)
 
+  # Command parameter required (for schedule command)
+  $commandsAttribute = New-Object System.Management.Automation.ParameterAttribute
+  $commandsAttribute.HelpMessage = "Commands to schedule"
+  $commandsAttribute.Position = 2
+  $commandsAttribute.Mandatory = $true
+  $commandsAttributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+  $commandsAttributes.Add($commandsAttribute)
+  $commandsAttributes.Add((New-Object System.Management.Automation.ValidateNotNullOrEmptyAttribute))
+  $commandsParameter = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("scheduleCommands", [string[]], $commandsAttributes)
+
   # Remaining parameters
   $remainingAttribute = New-Object System.Management.Automation.ParameterAttribute
   $remainingAttribute.HelpMessage = "Remaining parameteres"
@@ -70,6 +80,14 @@ DynamicParam {
     '^cleanLogs$' {
       if (-not $paramDictionary.ContainsKey("repositoryPath")) {
         $paramDictionary.Add("repositoryPath", $repositoryExistsAndInitializedParameter)
+      }
+    }
+    '^schedule$' {
+      if (-not $paramDictionary.ContainsKey("repositoryPath")) {
+        $paramDictionary.Add("repositoryPath", $repositoryExistsAndInitializedParameter)
+      }
+      if (-not $paramDictionary.ContainsKey("scheduleCommands")) {
+        $paramDictionary.Add("scheduleCommands", $commandsParameter)
       }
     }
     '^(updateDuplicacy|updateFilters|updateSelf)$' {
@@ -103,6 +121,7 @@ Begin {
   $repositoryPath = $PSBoundParameters["repositoryPath"]
   $remainingArguments = $PSBoundParameters["remainingArguments"] -join " "
   $storage = $PSBoundParameters["storage"]
+  $scheduleCommands = $PSBoundParameters["scheduleCommands"] -join ","
 }
 
 Process {
@@ -218,6 +237,74 @@ function main {
       $logDir = logDirPath($repositoryFullPath)
       log "Removing logs older than $($options.keepLogsForDays) day(s) from '$logDir'" INFO "$logFile"
       Get-ChildItem "$logDir/*" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-$options.keepLogsForDays)
+    }
+
+    '^schedule$' {
+      switch -Regex ($OSVersion) {
+        'win' {
+          if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")) {
+            # Limit scheduled task name to 190 characters
+            $taskName = "Duplicacy backup repository $repositoryName"[0..190] -join ""
+
+            $taskAction = New-ScheduledTaskAction `
+              -Execute "powershell.exe" `
+              -Argument "-NonInteractive -NoLogo -NoProfile -ExecutionPolicy Bypass -Command `"& '$($options.selfFullPath)' $scheduleCommands '$repositoryFullPath'`""
+
+            # A compromise which hopefully would work on all OS versions - replace the Eternity with something 30 years
+            $taskTrigger = New-ScheduledTaskTrigger `
+              -Once `
+              -At (Get-Date) `
+              -RepetitionDuration (New-TimeSpan -Days (365 * 30)) `
+              -RepetitionInterval (New-TimeSpan -Hours 4) `
+              -RandomDelay (New-TimeSpan -Minutes 10)
+
+            $taskSettings = New-ScheduledTaskSettingsSet `
+              -DontStopOnIdleEnd `
+              -DontStopIfGoingOnBatteries `
+              -RestartInterval (New-TimeSpan -Minutes 5) `
+              -RestartCount 10 `
+              -MultipleInstances IgnoreNew `
+              -StartWhenAvailable
+
+            # Get backup user credentials
+            $taskCredentials = Get-Credential `
+              -Message "Please enter the username and password of user that will run backup task" `
+              -UserName "$env:userdomain\$env:username"
+
+            # Unregister a scheduled task from the Windows Task Scheduler service
+            if (Get-ScheduledTask | Where-Object {$_.TaskName -like $taskName}) {
+              log "Updating an already scheduled task '$taskName' in the Windows Task Scheduler" INFO "$logFile"
+              Set-ScheduledTask `
+                -TaskName $taskName `
+                -Action $taskAction `
+                -Settings $taskSettings `
+                -Trigger $taskTrigger `
+                -User $taskCredentials.UserName `
+                -Password $taskCredentials.GetNetworkCredential().Password
+            }
+            else {
+              log "Scheduling a new task '$taskName' in the Windows Task Scheduler" INFO "$logFile"
+              Register-ScheduledTask `
+                -TaskName $taskName `
+                -Action $taskAction `
+                -RunLevel "Highest" `
+                -Settings $taskSettings `
+                -Trigger $taskTrigger `
+                -User $taskCredentials.UserName `
+                -Password $taskCredentials.GetNetworkCredential().Password
+            }
+
+            log "Scheduled the task '$taskName', you can verify it using Windows command 'taskschd.msc'" INFO "$logFile"
+          }
+          else {
+            log "Please execute with Administrator privileges" ERROR "$logFile"
+          }
+        }
+        default {
+          log "Scheduling task on '$_' architecture is not yet supported" ERROR "$logFile"
+        }
+      }
+      exit
     }
 
     '^updateDuplicacy$' {
