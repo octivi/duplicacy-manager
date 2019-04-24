@@ -125,7 +125,6 @@ Begin {
 }
 
 Process {
-
   $options = @{
     selfUrl           = "https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1"
     selfFullPath      = "$PSCommandPath"
@@ -184,8 +183,53 @@ Process {
   }
 
   function showHelp {
-    Write-Output "Help"
-  }
+    Write-Output "
+NAME:
+   duplicacy-manager - PowerShell wrapper on Duplicacy CLI that allows managing backups efficiently
+
+USAGE:
+   backup.ps1 [-commands] <commands> [[-repositoryPath] <backup repository path>] [[-storage] <storage URL>] [[-scheduleCommands] <commands to schedule>] [<Duplicacy arguments...>]
+
+   where:
+      <commands> - List of commands separated by single comma ',' (no spaces)
+      <backup repository path> - Relative or absolute backup repository local path
+      <storage backend> - One of the supported by Duplicacy storage backends (https://forum.duplicacy.com/t/supported-storage-backends/1107)
+      <commands to schedule> - Comma-separated list of commands to schedule, e.g. backup,prune,check,cleanLogs
+      <Duplicacy arguments> - Optional command-specific Duplicacy arguments (https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
+
+COMMANDS:
+   help - Show this help
+
+   cleanLogs <backup repository path> - Clean logs older than $($options.keepLogsForDays) days
+
+   schedule <backup repository path> <list of commands> - Schedule list of commands to execute,
+      e.g. 'backup,prune,check,cleanLogs'
+
+   updateDuplicacy - Update Duplicacy binary 
+      Downloads from 'https://github.com/gilbertchen/duplicacy/releases/download/v$($options.duplicacyVersion)/duplicacy_$($OSVersion)_x64_$($options.duplicacyVersion)' to '$($options.duplicacyFullPath)'
+
+   updateFilters - Update filters from TheBestPessimist's GitHub repository
+      Downloads from '$($options.filtersUrl)' to '$($options.filtersFullPath)'
+
+   updateSelf - Update self from our own GitHub repository
+      Downloads from '$($options.selfUrl)' to '$($options.selfFullPath)'
+
+   init <backup repository path> <storage backend> [<Duplicacy arguments...>] - Initialize a new repository and storage
+      Duplicacy command https://forum.duplicacy.com/t/init-command-details/1090
+
+   backup <backup repository path> [<Duplicacy arguments...>] - Save a snapshot of the repository to the storage
+      Duplicacy command https://forum.duplicacy.com/t/backup-command-details/1077
+
+   check <backup repository path> [<Duplicacy arguments...>] - Check the integrity of snapshots
+      Duplicacy command https://forum.duplicacy.com/t/check-command-details/1081
+
+   list <backup repository path> [<Duplicacy arguments...>] - List snapshots
+      Duplicacy command https://forum.duplicacy.com/t/list-command-details/1092
+
+   prune <backup repository path> [<Duplicacy arguments...>] - Prune snapshots by retention policy ('$($options.prune)')
+      Duplicacy command https://forum.duplicacy.com/t/prune-command-details/1005
+"
+}
 
   function log {
     [cmdletbinding()]
