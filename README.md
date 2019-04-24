@@ -77,6 +77,8 @@ This is the only way to create a repository that includes multiple drives on Win
 first-level symlinks (those under the root of the repository). Symlinks located under any subdirectories of the
 repository will be backed up as symlinks and will not be followed.
 
+Definitely check [Duplicacy documentation](https://forum.duplicacy.com/t/duplicacy-user-guide/1197).
+
 Example directory structure:
 
 ```shell
