@@ -95,7 +95,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
 
     where:
     * `<backup repository local path>` is a relative or absolute backup repository local path, e.g. `backup`
-    * `list of commands` is a comma-separated list of commands, e.g. `backup,prune,check,cleanLogs`
+    * `<list of commands>` is a comma-separated list of commands, e.g. `backup,prune,check,cleanLogs`
 
     For example
 
@@ -187,7 +187,7 @@ backup.ps1 init <backup repository path> <storage backend> [<Duplicacy init argu
 #### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
-* `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107)
+* `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/init-command-details/1090)
 
 #### Optional arguments
 
@@ -243,7 +243,7 @@ backup.ps1 list <backup repository path> [<Duplicacy list arguments...>]
 
 ### Command `prune`
 
-Prune snapshots by retention policy ('-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7'). Invokes [Duplicacy `prune` command](https://forum.duplicacy.com/t/prune-command-details/1005).
+Prune snapshots by retention policy (`-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7`). Invokes [Duplicacy `prune` command](https://forum.duplicacy.com/t/prune-command-details/1005).
 
 ```powershell
 backup.ps1 prune <backup repository path> [<Duplicacy prune arguments...>]
