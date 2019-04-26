@@ -135,7 +135,7 @@ Clean logs older than 30 days.
 backup.ps1 cleanLogs <backup repository path>
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
@@ -147,7 +147,7 @@ Schedule list of commands to execute, e.g. `backup,prune,check,cleanLogs`.
 backup.ps1 schedule <backup repository path> <commands to schedule>
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 * `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
@@ -184,12 +184,12 @@ Initialize a new repository and storage. Invokes [Duplicacy `init` command](http
 backup.ps1 init <backup repository path> <storage backend> [<Duplicacy init arguments...>]
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 * `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107)
 
-Optional arguments:
+#### Optional arguments
 
 * `<Duplicacy init arguments>` - Optional [Duplicacy `init` command arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
 
@@ -201,11 +201,11 @@ Save a snapshot of the repository to the storage. Invokes [Duplicacy `backup` co
 backup.ps1 backup <backup repository path> [<Duplicacy backup arguments...>]
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
-Optional arguments:
+#### Optional arguments
 
 * `<Duplicacy backup arguments>` - Optional [Duplicacy `backup` command arguments](https://forum.duplicacy.com/t/backup-command-details/1077)
 
@@ -217,11 +217,11 @@ Check the integrity of snapshots. Invokes [Duplicacy `check` command](https://fo
 backup.ps1 check <backup repository path> [<Duplicacy check arguments...>]
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
-Optional arguments:
+#### Optional arguments
 
 * `<Duplicacy check arguments>` - Optional [Duplicacy `check` command arguments](https://forum.duplicacy.com/t/check-command-details/1081)
 
@@ -233,11 +233,11 @@ List snapshots. Invokes [Duplicacy `list` command](https://forum.duplicacy.com/t
 backup.ps1 list <backup repository path> [<Duplicacy list arguments...>]
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
-Optional arguments:
+#### Optional arguments
 
 * `<Duplicacy list arguments>` - Optional [Duplicacy `list` command arguments](https://forum.duplicacy.com/t/list-command-details/1092)
 
@@ -249,11 +249,11 @@ Prune snapshots by retention policy ('-all -keep 0:1825 -keep 30:180 -keep 7:30 
 backup.ps1 prune <backup repository path> [<Duplicacy prune arguments...>]
 ```
 
-Required arguments:
+#### Required arguments
 
 * `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
-Optional arguments:
+#### Optional arguments
 
 * `<Duplicacy prune arguments>` - Optional [Duplicacy `prune` command arguments](https://forum.duplicacy.com/t/prune-command-details/1005)
 
