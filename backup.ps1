@@ -399,37 +399,34 @@ COMMANDS:
         switch ($OSVersion) {
           'lin' {
             log "Next steps:" INFO "$logFile"
-            log "1. Enter backup repository directory:" INFO "$logFile"
-            log "      $ cd $repositoryFullPath" INFO "$logFile"
-            log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+            log "1. Add first-level symbolic links to folders or disks you want to backup, for example" INFO "$logFile"
             log "      $ sudo ln -s /home" INFO "$logFile"
+            log "2. Update default filters" INFO "$logFile"
+            log "      $ $($options.selfFullPath) updateFilters" INFO "$logFile"
             log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
             log "   You can use '$($options.filtersFullPath)' as an example." INFO "$logFile"
-            log "   If it does not exist, fetch a new one by executing:" INFO "$logFile"
-            log "      $ $($options.selfFullPath) updateFilters" INFO "$logFile"
+            log "      $ cp $($options.filtersFullPath) $(Join-Path -Path $duplicacyDirPath -ChildPath filters)"
           }
           'osx' {
             log "Next steps:" INFO "$logFile"
-            log "1. Enter backup repository directory:" INFO "$logFile"
-            log "      $ cd $repositoryFullPath" INFO "$logFile"
-            log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
+            log "1. Add first-level symbolic links to folders or disks you want to backup, for example" INFO "$logFile"
             log "      $ sudo ln -s /Users" INFO "$logFile"
+            log "2. Update default filters" INFO "$logFile"
+            log "      $ $($options.selfFullPath) updateFilters" INFO "$logFile"
             log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
             log "   You can use '$($options.filtersFullPath)' as an example." INFO "$logFile"
-            log "   If it does not exist, fetch a new one by executing:" INFO "$logFile"
-            log "      > $($options.selfFullPath) updateFilters" INFO "$logFile"
+            log "      $ cp $($options.filtersFullPath) $(Join-Path -Path $duplicacyDirPath -ChildPath filters)"
           }
           'win' {
             log "Next steps:" INFO "$logFile"
-            log "1. Enter backup repository directory:" INFO "$logFile"
-            log "      PS C:\> cd $repositoryFullPath" INFO "$logFile"
-            log "2. Add symlinks to folders or disks you want to backup" INFO "$logFile"
-            log "      PS C:\> cmd /c mklink /d C C:\" INFO "$logFile"
-            log "      PS C:\> cmd /c mklink /d D D:\" INFO "$logFile"
+            log "1. Add first-level symbolic links to folders or disks you want to backup, for example" INFO "$logFile"
+            log "      PS C:\> cmd /c mklink /d $repositoryFullPath\C C:\" INFO "$logFile"
+            log "      PS C:\> cmd /c mklink /d $repositoryFullPath\D D:\" INFO "$logFile"
+            log "2. Update default filters" INFO "$logFile"
+            log "      PS C:\> $($options.selfFullPath) updateFilters" INFO "$logFile"
             log "3. Create your own filters file in '$(Join-Path -Path $duplicacyDirPath -ChildPath filters)'." INFO "$logFile"
             log "   You can use '$($options.filtersFullPath)' as an example." INFO "$logFile"
-            log "   If it does not exist, fetch a new one by executing:" INFO "$logFile"
-            log "      PS C:\> $($options.selfFullPath) updateFilters" INFO "$logFile"
+            log "      PS C:\> copy $($options.filtersFullPath) $(Join-Path -Path $duplicacyDirPath -ChildPath filters)"
           }
         }
       }
