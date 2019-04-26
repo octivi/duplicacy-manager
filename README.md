@@ -31,13 +31,13 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
 4. Download Duplicacy CLI binary
 
    ```powershell
-   PS C:\Backup> ./backup.ps1 updateDuplicacy
+   PS C:\Backup> C:\Backup\backup.ps1 updateDuplicacy
    ```
 
 5. Initialize backup repository
 
    ```powershell
-   PS C:\Backup> ./backup.ps1 init <backup repository local path> <storage backend> -encrypt
+   PS C:\Backup> C:\Backup\backup.ps1 init <backup repository local path> <storage backend> -encrypt
    ```
 
    where:
@@ -52,7 +52,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
    For example
 
    ```powershell
-   PS C:\Backup> ./backup.ps1 init C:\Backup\backup sftp://u00000@u00000.your-storagebox.de/duplicacy -encrypt
+   PS C:\Backup> C:\Backup\backup.ps1 init C:\Backup\backup sftp://u00000@u00000.your-storagebox.de/duplicacy -encrypt
    ```
 
 6. Configure the newly initialized backup repository (remember about filters)
@@ -68,7 +68,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
     2. Update default filters from [TheBestPessimist's duplicacy-utils](https://github.com/TheBestPessimist/duplicacy-utils)
 
        ```powershell
-       PS C:\Backup> ./backup.ps1 updateFilters
+       PS C:\Backup> C:\Backup\backup.ps1 updateFilters
        ```
 
     3. Create your own filters file in `C:\Backup\backup\.duplicacy\filters`. You can use `C:\Backup\filters.example`
@@ -81,7 +81,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
 7. Schedule backup with Windows Task Scheduler
 
     ```powershell
-    PS C:\Backup> ./backup.ps1 schedule <backup repository local path> <list of commands>
+    PS C:\Backup> C:\Backup\backup.ps1 schedule <backup repository local path> <list of commands>
     ```
 
     where:
@@ -91,7 +91,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
     For example
 
     ```powershell
-    PS C:\Backup> ./backup.ps1 schedule C:\Backup\backup backup,prune,check,cleanLogs
+    PS C:\Backup> C:\Backup\backup.ps1 schedule C:\Backup\backup backup,prune,check,cleanLogs
     ```
 
 ## Project goals
