@@ -8,6 +8,15 @@ that allows managing backups efficiently.
 Duplicacy CLI (Command Line Interface) is free for personal use and commercial trial. Commercial use of
 Duplicacy CLI requires per-user licenses available from [Duplicacy website](https://duplicacy.com/).
 
+## Project goals
+
+* Cross-platform – runs on any platform supported by Duplicacy (Linux, MacOS, Windows)
+* Convention over configuration – sensible defaults that may be changed if needed
+* Fire&forget – self auto-update and Duplicacy auto-update
+* Quiet – bother user only if something went wrong
+* Simple, one-file download – self-contained single binary or script, easy to download and use
+* Properly licensed – permission for private and commercial use
+
 ## Quick Start
 
 ### Windows
@@ -94,14 +103,159 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
     PS C:\Backup> C:\Backup\backup.ps1 schedule C:\Backup\backup backup,prune,check,cleanLogs
     ```
 
-## Project goals
+## Duplicacy manager commands
 
-* Cross-platform – runs on any platform supported by Duplicacy (Linux, MacOS, Windows)
-* Convention over configuration – sensible defaults that may be changed if needed
-* Fire&forget – self auto-update and Duplicacy auto-update
-* Quiet – bother user only if something went wrong
-* Simple, one-file download – self-contained single binary or script, easy to download and use
-* Properly licensed – permission for private and commercial use
+Usage:
+
+```powershell
+backup.ps1 [-commands] <commands> [[-repositoryPath] <backup repository path>] [[-storage] <storage URL>] [[-scheduleCommands] <commands to schedule>] [<Duplicacy arguments...>]
+```
+
+where:
+
+* `<commands>` - List of commands to execute separated by single comma ',' (no spaces), e.g. `backup,prune,check,cleanLogs`
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+* `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107)
+* `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
+* `<Duplicacy arguments>` - Optional [command-specific Duplicacy arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
+
+### Command `help`
+
+Show this help.
+
+```powershell
+backup.ps1 help
+```
+
+### Command `cleanLogs`
+
+Clean logs older than 30 days.
+
+```powershell
+backup.ps1 cleanLogs <backup repository path>
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+
+### Command `schedule`
+
+Schedule list of commands to execute, e.g. `backup,prune,check,cleanLogs`.
+
+```powershell
+backup.ps1 schedule <backup repository path> <commands to schedule>
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+* `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
+
+### Command `updateDuplicacy`
+
+Download and update Duplicacy CLI binary from [Duplicacy's GitHub repository](https://github.com/gilbertchen/duplicacy/releases/download/).
+
+```powershell
+backup.ps1 updateDuplicacy
+```
+
+### Command `updateFilters`
+
+Download and update filters from [TheBestPessimist's GitHub repository](https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only).
+
+```powershell
+backup.ps1 updateFilters
+```
+
+### Command `updateSelf`
+
+Download and update self from [our own GitHub repository](https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1).
+
+```powershell
+backup.ps1 updateSelf
+```
+
+### Command `init`
+
+Initialize a new repository and storage. Invokes [Duplicacy `init` command](https://forum.duplicacy.com/t/init-command-details/1090).
+
+```powershell
+backup.ps1 init <backup repository path> <storage backend> [<Duplicacy init arguments...>]
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+* `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107)
+
+Optional arguments:
+
+* `<Duplicacy init arguments>` - Optional [Duplicacy `init` command arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
+
+### Command `backup`
+
+Save a snapshot of the repository to the storage. Invokes [Duplicacy `backup` command](https://forum.duplicacy.com/t/backup-command-details/1077).
+
+```powershell
+backup.ps1 backup <backup repository path> [<Duplicacy backup arguments...>]
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+
+Optional arguments:
+
+* `<Duplicacy backup arguments>` - Optional [Duplicacy `backup` command arguments](https://forum.duplicacy.com/t/backup-command-details/1077)
+
+### Command `check`
+
+Check the integrity of snapshots. Invokes [Duplicacy `check` command](https://forum.duplicacy.com/t/check-command-details/1081).
+
+```powershell
+backup.ps1 check <backup repository path> [<Duplicacy check arguments...>]
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+
+Optional arguments:
+
+* `<Duplicacy check arguments>` - Optional [Duplicacy `check` command arguments](https://forum.duplicacy.com/t/check-command-details/1081)
+
+### Command `list`
+
+List snapshots. Invokes [Duplicacy `list` command](https://forum.duplicacy.com/t/list-command-details/1092).
+
+```powershell
+backup.ps1 list <backup repository path> [<Duplicacy list arguments...>]
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+
+Optional arguments:
+
+* `<Duplicacy list arguments>` - Optional [Duplicacy `list` command arguments](https://forum.duplicacy.com/t/list-command-details/1092)
+
+### Command `prune`
+
+Prune snapshots by retention policy ('-all -keep 0:1825 -keep 30:180 -keep 7:30 -keep 1:7'). Invokes [Duplicacy `prune` command](https://forum.duplicacy.com/t/prune-command-details/1005).
+
+```powershell
+backup.ps1 prune <backup repository path> [<Duplicacy prune arguments...>]
+```
+
+Required arguments:
+
+* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+
+Optional arguments:
+
+* `<Duplicacy prune arguments>` - Optional [Duplicacy `prune` command arguments](https://forum.duplicacy.com/t/prune-command-details/1005)
 
 ## Directory structure
 
