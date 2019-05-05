@@ -34,16 +34,22 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
    PS C:\WINDOWS\system32> cd C:\Backup
    ```
 
-3. Download Duplicacy Manager script from <https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1>
+3. Change Execution Policy in PowerShell
+
+   ```powershell
+   PS C:\Backup> Set-ExecutionPolicy unrestricted
+   ```
+
+4. Download Duplicacy Manager script from <https://raw.githubusercontent.com/octivi/duplicacy-manager/powershell/backup.ps1>
    and save it to the newly created `C:\Backup` directory
 
-4. Download Duplicacy CLI binary
+5. Download Duplicacy CLI binary
 
    ```powershell
    PS C:\Backup> C:\Backup\backup.ps1 updateDuplicacy
    ```
 
-5. Initialize backup repository
+6. Initialize backup repository
 
    ```powershell
    PS C:\Backup> C:\Backup\backup.ps1 init <backup repository local path> <storage backend> -encrypt
@@ -64,7 +70,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
    PS C:\Backup> C:\Backup\backup.ps1 init C:\Backup\backup sftp://u00000@u00000.your-storagebox.de/duplicacy -encrypt
    ```
 
-6. Configure the newly initialized backup repository (remember about filters)
+7. Configure the newly initialized backup repository (remember about filters)
 
     1. Add first-level symbolic links to folders or disks you want to back up, for example to backup
        `C:\` and `D:\` disks create symbolic links
@@ -87,7 +93,7 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
        PS C:\Backup> copy C:\Backup\filters.example C:\Backup\backup\.duplicacy\filters
        ```
 
-7. Schedule backup with Windows Task Scheduler
+8. Schedule backup with Windows Task Scheduler
 
     ```powershell
     PS C:\Backup> C:\Backup\backup.ps1 schedule <backup repository local path> <list of commands>
