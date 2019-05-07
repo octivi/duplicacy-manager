@@ -131,7 +131,7 @@ Process {
     filtersUrl        = "https://raw.githubusercontent.com/TheBestPessimist/duplicacy-utils/master/filters/filters_symlink-to-root-drive-only"
     filtersFullPath   = Join-Path -Path "$PSScriptRoot" -ChildPath "filters.example"
     keepLogsForDays   = 30
-    duplicacyVersion  = "2.1.2"
+    duplicacyVersion  = "2.2.0"
     duplicacyFullPath = Join-Path -Path "$PSScriptRoot" -ChildPath "duplicacy"
     globalOptions     = "-log"
     # Enable the Volume Shadow Copy service (Windows and macOS using APFS only).
