@@ -1,4 +1,4 @@
-# Duplicacy Manager
+# Duplicacy Manager is no longer maintained
 
 **Work in progress. DO NOT use in production.**
 
@@ -10,12 +10,12 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
 
 ## Project goals
 
-* Cross-platform – runs on any platform supported by Duplicacy (Linux, MacOS, Windows)
-* Convention over configuration – sensible defaults that may be changed if needed
-* Fire&forget – self auto-update and Duplicacy auto-update
-* Quiet – bother user only if something went wrong
-* Simple, one-file download – self-contained single binary or script, easy to download and use
-* Properly licensed – permission for private and commercial use
+- Cross-platform – runs on any platform supported by Duplicacy (Linux, MacOS, Windows)
+- Convention over configuration – sensible defaults that may be changed if needed
+- Fire&forget – self auto-update and Duplicacy auto-update
+- Quiet – bother user only if something went wrong
+- Simple, one-file download – self-contained single binary or script, easy to download and use
+- Properly licensed – permission for private and commercial use
 
 ## Quick Start
 
@@ -56,10 +56,10 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
    ```
 
    where:
-   * `<backup repository local path>` is a relative or absolute backup repository local path
+   - `<backup repository local path>` is a relative or absolute backup repository local path
      (the directory is created under `C:\Backup` directory, e.g. `backup`)
-   * `<storage backend>` is one of the [supported by Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107),
-    e.g. `sftp://u00000@u00000.your-storagebox.de/duplicacy`
+   - `<storage backend>` is one of the [supported by Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107),
+     e.g. `sftp://u00000@u00000.your-storagebox.de/duplicacy`
 
    You will be asked to provide a password to storage backend (and other credentials, depends
    on the selected backend) and password to encrypt the backup.
@@ -71,43 +71,42 @@ Duplicacy CLI requires per-user licenses available from [Duplicacy website](http
    ```
 
 7. Configure the newly initialized backup repository (remember about filters)
+   1. Add first-level symbolic links to folders or disks you want to back up, for example to backup
+      `C:\` and `D:\` disks create symbolic links
 
-    1. Add first-level symbolic links to folders or disks you want to back up, for example to backup
-       `C:\` and `D:\` disks create symbolic links
+      ```powershell
+      PS C:\Backup> cmd /c mklink /d C:\Backup\backup\C C:\
+      PS C:\Backup> cmd /c mklink /d C:\Backup\backup\D D:\
+      ```
 
-       ```powershell
-       PS C:\Backup> cmd /c mklink /d C:\Backup\backup\C C:\
-       PS C:\Backup> cmd /c mklink /d C:\Backup\backup\D D:\
-       ```
+   2. Update default filters from [TheBestPessimist's duplicacy-utils](https://github.com/TheBestPessimist/duplicacy-utils)
 
-    2. Update default filters from [TheBestPessimist's duplicacy-utils](https://github.com/TheBestPessimist/duplicacy-utils)
+      ```powershell
+      PS C:\Backup> C:\Backup\backup.ps1 updateFilters
+      ```
 
-       ```powershell
-       PS C:\Backup> C:\Backup\backup.ps1 updateFilters
-       ```
+   3. Create your own filters file in `C:\Backup\backup\.duplicacy\filters`. You can use `C:\Backup\filters.example`
+      as an example
 
-    3. Create your own filters file in `C:\Backup\backup\.duplicacy\filters`. You can use `C:\Backup\filters.example`
-       as an example
-
-       ```powershell
-       PS C:\Backup> copy C:\Backup\filters.example C:\Backup\backup\.duplicacy\filters
-       ```
+      ```powershell
+      PS C:\Backup> copy C:\Backup\filters.example C:\Backup\backup\.duplicacy\filters
+      ```
 
 8. Schedule backup with Windows Task Scheduler
 
-    ```powershell
-    PS C:\Backup> C:\Backup\backup.ps1 schedule <backup repository local path> <list of commands>
-    ```
+   ```powershell
+   PS C:\Backup> C:\Backup\backup.ps1 schedule <backup repository local path> <list of commands>
+   ```
 
-    where:
-    * `<backup repository local path>` is a relative or absolute backup repository local path, e.g. `backup`
-    * `<list of commands>` is a comma-separated list of commands, e.g. `backup,prune,check,cleanLogs`
+   where:
+   - `<backup repository local path>` is a relative or absolute backup repository local path, e.g. `backup`
+   - `<list of commands>` is a comma-separated list of commands, e.g. `backup,prune,check,cleanLogs`
 
-    For example
+   For example
 
-    ```powershell
-    PS C:\Backup> C:\Backup\backup.ps1 schedule C:\Backup\backup backup,prune,check,cleanLogs
-    ```
+   ```powershell
+   PS C:\Backup> C:\Backup\backup.ps1 schedule C:\Backup\backup backup,prune,check,cleanLogs
+   ```
 
 ## Duplicacy manager commands
 
@@ -119,11 +118,11 @@ backup.ps1 [-commands] <commands> [[-repositoryPath] <backup repository path>] [
 
 where:
 
-* `<commands>` - List of commands to execute separated by single comma ',' (no spaces), e.g. `backup,prune,check,cleanLogs`
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
-* `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107)
-* `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
-* `<Duplicacy arguments>` - Optional [command-specific Duplicacy arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
+- `<commands>` - List of commands to execute separated by single comma ',' (no spaces), e.g. `backup,prune,check,cleanLogs`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/supported-storage-backends/1107)
+- `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
+- `<Duplicacy arguments>` - Optional [command-specific Duplicacy arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
 
 ### Command `help`
 
@@ -143,7 +142,7 @@ backup.ps1 cleanLogs <backup repository path>
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
 ### Command `schedule`
 
@@ -155,8 +154,8 @@ backup.ps1 schedule <backup repository path> <commands to schedule>
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
-* `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<commands to schedule>` - Comma-separated list of commands to schedule, e.g. `backup,prune,check,cleanLogs`
 
 ### Command `updateDuplicacy`
 
@@ -192,12 +191,12 @@ backup.ps1 init <backup repository path> <storage backend> [<Duplicacy init argu
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
-* `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/init-command-details/1090)
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<storage backend URL>` - One of the supported by [Duplicacy storage backends](https://forum.duplicacy.com/t/init-command-details/1090)
 
 #### Optional arguments
 
-* `<Duplicacy init arguments>` - Optional [Duplicacy `init` command arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
+- `<Duplicacy init arguments>` - Optional [Duplicacy `init` command arguments](https://forum.duplicacy.com/t/duplicacy-user-guide/1197)
 
 ### Command `backup`
 
@@ -209,11 +208,11 @@ backup.ps1 backup <backup repository path> [<Duplicacy backup arguments...>]
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
 #### Optional arguments
 
-* `<Duplicacy backup arguments>` - Optional [Duplicacy `backup` command arguments](https://forum.duplicacy.com/t/backup-command-details/1077)
+- `<Duplicacy backup arguments>` - Optional [Duplicacy `backup` command arguments](https://forum.duplicacy.com/t/backup-command-details/1077)
 
 ### Command `check`
 
@@ -225,11 +224,11 @@ backup.ps1 check <backup repository path> [<Duplicacy check arguments...>]
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
 #### Optional arguments
 
-* `<Duplicacy check arguments>` - Optional [Duplicacy `check` command arguments](https://forum.duplicacy.com/t/check-command-details/1081)
+- `<Duplicacy check arguments>` - Optional [Duplicacy `check` command arguments](https://forum.duplicacy.com/t/check-command-details/1081)
 
 ### Command `list`
 
@@ -241,11 +240,11 @@ backup.ps1 list <backup repository path> [<Duplicacy list arguments...>]
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
 #### Optional arguments
 
-* `<Duplicacy list arguments>` - Optional [Duplicacy `list` command arguments](https://forum.duplicacy.com/t/list-command-details/1092)
+- `<Duplicacy list arguments>` - Optional [Duplicacy `list` command arguments](https://forum.duplicacy.com/t/list-command-details/1092)
 
 ### Command `prune`
 
@@ -257,11 +256,11 @@ backup.ps1 prune <backup repository path> [<Duplicacy prune arguments...>]
 
 #### Required arguments
 
-* `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
+- `<backup repository path>` - Relative or absolute backup repository local path, e.g. `C:\Backup\backup`
 
 #### Optional arguments
 
-* `<Duplicacy prune arguments>` - Optional [Duplicacy `prune` command arguments](https://forum.duplicacy.com/t/prune-command-details/1005)
+- `<Duplicacy prune arguments>` - Optional [Duplicacy `prune` command arguments](https://forum.duplicacy.com/t/prune-command-details/1005)
 
 ## Directory structure
 
